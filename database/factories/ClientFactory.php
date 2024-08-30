@@ -18,8 +18,8 @@ class ClientFactory extends Factory
     {
         return [
             //
-            'telephone' => $this->faker->phoneNumber(),
-            'address' => $this->faker->address(),
+            'telephone' => $this->faker->numerify('77#######'),
+            'adresse' => $this->faker->address(),
             'surnom' => $this->faker->name(),
         ];
     }

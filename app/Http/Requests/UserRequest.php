@@ -23,16 +23,16 @@ class UserRequest extends FormRequest
     {
         return [
             //
-            'prenom' => 'sometimes|required|string|max:55|min:3',
-            'nom' => 'sometimes|required|string|max:55|min:2',
+            'prenom' => 'required|string|max:55|min:3',
+            'nom' => 'required|string|max:55|min:2',
             'login' => [
-                'sometimes',
+                
                 'required',
                 'email',
                 'unique:users,login'
             ],
             'password' => [
-                'sometimes',
+
                 'required',
                 'string',
                 'min:8',
@@ -41,8 +41,8 @@ class UserRequest extends FormRequest
                 'regex:/[0-9]/',
                 'regex:/[@$!%*?&]/',
             ],
-            'confirm_password' => 'sometimes|required_with:password|same:password',
-            'role' => 'sometimes|required|in:ADMIN,BOUTIQUIER',
+            'confirm_password' => 'required_with:password|same:password',
+            'role' => 'required|in:ADMIN,BOUTIQUIER',
 
         ];
     }

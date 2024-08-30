@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\EnumRole;
+use App\Enums\RoleEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -18,7 +19,9 @@ return new class extends Migration
             $table->string('prenom');
             $table->string('login')->unique();
             $table->string('password');
-            $table->string('role')->default(EnumRole::CLIENT);
+            $table->unsignedBigInteger('role_id')->default(RoleEnum::CLIENT->value);
+            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
+
             $table->timestamps();
         });
     }

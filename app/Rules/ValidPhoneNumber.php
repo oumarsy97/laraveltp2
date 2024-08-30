@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Rules;
 
 use Closure;
@@ -17,20 +16,9 @@ class ValidPhoneNumber implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        // Vérifier si le numéro de téléphone a 9 caractères
         // et commence par l'un des préfixes autorisés
-        if (!preg_match('/^(76|78|77|70)\d{7}$/', $value)) {
-            $fail('Le numéro de téléphone doit contenir 9 caractères et commencer par 76, 78, 77, ou 70.');
+        if (!preg_match('/^(78|76|70|77|75)\d{7}$/', $value)) {
+            $fail('Le :attribute doit être un numéro de téléphone valide (9 chiffres commençant par 78, 76, 70, 77 ou 75).');
         }
-    }
-
-    public function passes($attribute, $value)
-    {
-        return preg_match('/^(78|76|70|77|75)[0-9]{7}$/', $value);
-    }
-
-    public function message()
-    {
-        return 'Le :attribute doit être un numéro de téléphone valide (9 chiffres commençant par 78, 76, 70, 77 ou 75).';
     }
 }

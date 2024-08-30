@@ -2,8 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ResponseStatus;
+use App\Rules\CustomPassword;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Rules\ValidPhoneNumber;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Traits\ApiResponser;
 
 class ClientRequest extends FormRequest
 {
@@ -15,40 +20,58 @@ class ClientRequest extends FormRequest
         return true;
     }
 
-    /**
+    /***
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
 
 
-    public function rules()
+    public function rules(): array
     {
         $rules = [
-            'adresse' => 'required|string|max:255',
+            'telephone' => ['required', new ValidPhoneNumber()],
+            'adresse' => 'required|string|max:55',
+            'surnom' => 'required|string|max:55',
+            'user_id' => 'nullable|exists:users,id',
             'user' => 'nullable|array',
-            'telephones' => ['required', new ValidPhoneNumber],
+            'user.nom' => 'required_with:user,|string|max:255',
+            'user.prenom' => 'required_with:user,|string|max:255',
+            'user.login' => 'required_with:user,|email|unique:users,login',
+            'user.password' => ['required_with:user,',new CustomPassword(),'confirmed'],
         ];
-
-
-
-        if ($this->isMethod('patch') || $this->isMethod('put')) {
-            // Règles spécifiques pour la mise à jour
-            $rules['telephone'] = 'sometimes|numeric|unique:users,telephone,' . $this->user()->id;
-            $rules['adresse'] = 'sometimes|string|max:255';
-            $rules['user'] = 'nullable|array';
-        }
+        // if ($this->filled('user')) {
+        //     $rules['user'] = [
+        //          'login' => 'email',
+        //     ];
+        // }
 
         return $rules;
-
     }
 
+    //
     public function messages()
     {
         return [
             'telephone.required' => 'Le numéro de téléphone est requis.',
             'adresse.required' => 'L\'adresse est requise.',
             'user_id.exists' => 'L\'utilisateur spécifié n\'existe pas.',
+            'telephone.required' => 'Le numéro de téléphone est requis.',
+            'adresse.required' => 'L\'adresse est requise.',
+            'user.nom.required_if' => 'Le nom de l\'utilisateur est requis si l\'utilisateur est fourni.',
+            'user.prenom.required_if' => 'Le prenom de l\'utilisateur est requis si l\'utilisateur est fourni.',
+            'user.login.required_if' => 'L\'email de l\'utilisateur est requis si l\'utilisateur est fourni.',
+            'user.password.required_if' => 'Le mot de passe de l\'utilisateur est requis si l\'utilisateur est fourni.',
+
+
+
         ];
     }
+
+    public function failedValidation(Validator $validator)
+{
+    throw new HttpResponseException(
+        ApiResponser::sendResponse(null, $validator->errors(), 422,ResponseStatus::ECHEC)
+    );
+}
 }

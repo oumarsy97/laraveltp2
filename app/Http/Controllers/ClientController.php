@@ -20,13 +20,16 @@ class ClientController extends Controller
 {
     use ApiResponser;
     //
-    public function index()
+    public function index( Request $request)
 {
     // $clients = Client::with('user')->paginate(10);
-
+    $include = $request->has('include')?  [$request->input('include')] : [];
+    $data = Client::with($include)->whereNotNull('user_id')->get();
     $clients = QueryBuilder::for(Client::class)
-            ->allowedFilters(['telephone'])
+            ->allowedFilters(['surname'])
+            ->allowedIncludes(['user'])
             ->get();
+
 
         return  ApiResponser::sendResponse($clients, 'Clients trouvés',200, ResponseStatus::SUCCESS);
     // return $this->successResponse($clients, 'Clients trouvés', 200);
@@ -38,6 +41,18 @@ class ClientController extends Controller
     return $this->successResponse($clients, 'Clients trouvés', 200);
  }
 
+ public function show(Request $request, $id)
+{
+    $include = $request->has('include')?  [$request->input('include')] : [];
+    $data = Client::with($include)->whereNotNull('user_id')->get();
+    //  dd($data);
+    return new ClientResource($data);
+    if(!$client){
+        return  $this->errorResponse(null,'Client not found', 404);
+    }
+    return  $this->successResponse($client, 'Client retrieved successfully', 200);
+}
+
 
  public function store(ClientRequest $request)
 {
@@ -46,40 +61,16 @@ class ClientController extends Controller
  try {
 
     $data = $request->validated();
-    if($data->fails()) {
-        return response()->json(['errors' => $data->errors()], 422);
-    }
+    // dd($data);
+     $client = Client::create($data);
 
     if ($request->has('user')) {
-        $userData = $data['user'];
+
+        $userData = $request->input('user');
         $userData['role'] ='CLIENT';
-        try {
-            $validator = Validator::make($userData, [
-                'prenom' => 'required|string|max:55|min:3',
-                'nom' => 'required|string|max:55|min:2',
-                'login' => 'required|email|unique:users',
-                // 'password' => 'required|string|min:8|regex:/[A-Z]/|regex:/[a-z]/|regex:/[0-9]/|regex:/[@$!%*?&]/',
-                'password' => ['required', new CustomPassword],
-                'confirm_password' => 'required|same:password',
-            ]);
-            if ($validator->fails()) {
-                return $this->errorResponse($validator->errors(), 422);
-            }
-
-            $validatedUserData = $validator->validated(); // Obtenir les données validées
-
-        } catch (ValidationException $e) {
-            return $this->errorResponse($e->errors(), 422);
-        }
-
-        // Créer l'utilisateur et ajouter son ID aux données du client
-         $validatedUserData['password'] = bcrypt($validatedUserData['password']);
-        $user = User::create($validatedUserData);
-        $data['user_id'] = $user->id;
+        $user = User::create($userData);
+        $user->client()->save($client);
     }
-
-    // Créer le client avec ou sans user_id
-    $client = Client::create($data)->load('user');
 
     DB::commit(); // Terminer la transaction
 
@@ -87,7 +78,7 @@ class ClientController extends Controller
 
 } catch (ValidationException $e) {
     DB::rollBack();
-    // return  ApiResponser::sendResponse($e->errors(), 422);
+     return  ApiResponser::sendResponse($e->errors(), $e->getMessage(),ResponseStatus::ECHEC, 422);
 }
  }
 
@@ -156,25 +147,8 @@ public function destroy($id)
 }
 
 
-public function show($id)
-{
-    $client = Client::with('user')->findOrFail($id);
-    return new ClientResource($client);
-    if(!$client){
-        return  $this->errorResponse(null,'Client not found', 404);
-    }
-    return  $this->successResponse($client, 'Client retrieved successfully', 200);
-}
-//filtre client
-public function filterbyTelephone(Request $request)
-{
 
-        $clients = QueryBuilder::for(Client::class)
-            ->allowedFilters(['telephone'])
-            ->get();
 
-        return $this->successResponse($clients, 'Clients trouvés', 200);
-}
 
 //sort
 public function sortbyTelephone()

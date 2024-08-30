@@ -1,6 +1,8 @@
 <?php
 namespace App\Traits;
 
+use Illuminate\Http\Response;
+
 trait ApiResponser
 {
     protected function successResponse($data, $message = null, $code = 200)
@@ -21,7 +23,7 @@ trait ApiResponser
         ], $code);
     }
 
-     static function sendResponse($data, $message = null, $code =200 , $status)
+     static function sendResponse($data, $message = "ressource non trouver", $code = Response::HTTP_OK , $status)
     {
         return response()->json([
             'status' => $status,

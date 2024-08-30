@@ -1,51 +1,67 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Enums\ResponseStatus;
+use App\Enums\RoleEnum;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Models\RefreshToken;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Traits\ApiResponser;
 use Illuminate\Support\Str;
+use \Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
 {
     use ApiResponser;
-    public function login(Request $request)
+
+    public function register(RegisterRequest $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        $validator =  $request->only('prenom', 'nom', 'login', 'password');
 
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
-            $token = $user->createToken('api-token')->plainTextToken;
-            $refreshToken = $this->createRefreshToken($user);
-
-            return response()->json([
-                'user' => $user,
-                'token' => $token,
-                'refresh_token' => $refreshToken->token,
-            ]);
+        $validator['password'] = bcrypt($request->password);
+        if($request->role == 'ADMIN'){
+            $validator['role_id'] = RoleEnum::ADMIN;
+        }else{
+            $validator['role_id'] = RoleEnum::BOUTIQUIER;
         }
 
-        return response()->json(['message' => 'Invalid credentials'], 401);
+        $user = User::create($validator);
+        $token = $user->createToken('api-token')->accessToken;
+
+        return $this->sendResponse(['token' => $token, 'user' => $user], 'utilisateur cree avec succes', Response::HTTP_OK,ResponseStatus::SUCCESS);
+    }
+    public function login(LoginRequest $request)
+    {
+        try{
+
+        $credentials = $request->only('login', 'password');
+
+        if (Auth::attempt($credentials)) {
+            /** @var \App\Models\User $user **/
+
+            $user = Auth::user();
+
+
+            $role = Role::find($user->role_id)->libelle;
+
+           $scopes = [$role];
+            $token = $user->createToken('api-token', ['ADMIN'])->accessToken;
+             $refreshToken = $this->createRefreshToken($user);
+
+            return $this->sendResponse(['token' => $token, 'refresh_token' => $refreshToken->token], 'utilisateur connecté avec succes', Response::HTTP_OK,ResponseStatus::SUCCESS);
+        }
+
+        return $this->sendResponse(null, 'login ou mot de passe incorrects', Response::HTTP_UNAUTHORIZED,ResponseStatus::ECHEC);
+        }catch(\Exception $e){
+            return $this->sendResponse(null, $e->getMessage(), Response::HTTP_BAD_REQUEST,ResponseStatus::ECHEC);
+        }
     }
 
-    // public function login(Request $request)
-    // {
-    //     $credentials = $request->only('email', 'password');
-
-    //     if (!Auth::attempt($credentials)) {
-    //         return response()->json(['error' => 'Unauthorized'], 401);
-    //     }
-
-    //     $user = Auth::user();
-    //      $token = $user->createToken('API Token')->accessToken;
-
-    //     return response()->json(['token' => 1], 200);
-    // }
     public function refresh(Request $request)
     {
         $request->validate([
@@ -94,7 +110,7 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
         RefreshToken::where('user_id', $request->user()->id)->delete();
 
-        return response()->json(['message' => 'Logged out successfully']);
+        return $this->sendResponse(null, 'utilisateur deconnecté avec succes', Response::HTTP_OK,ResponseStatus::SUCCESS);
     }
 
 }

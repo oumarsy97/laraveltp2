@@ -13,12 +13,10 @@ class Client extends Model
     protected $fillable = [
         'telephone',
         'adresse',
+        'surnom',
         'user_id'
     ];
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+    
 
     public function dettes()
     {

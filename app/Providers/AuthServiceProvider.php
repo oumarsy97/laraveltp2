@@ -20,11 +20,35 @@ class AuthServiceProvider extends ServiceProvider
     /**
      * Register any authentication / authorization services.
      */
-    public function boot(): void
+    // public function boot(): void
+    // {
+    //     //
+    //     // Optionnel : Définir la durée de vie des tokens
+    //     Passport::tokensExpireIn(now()->addDays(15));
+    //     Passport::refreshTokensExpireIn(now()->addDays(30));
+    // }
+   /**
+     * Register any authentication / authorization services.
+     *
+     * @return void
+     */
+    public function boot()
     {
-        //
-        // Optionnel : Définir la durée de vie des tokens
-        Passport::tokensExpireIn(now()->addDays(15));
-        Passport::refreshTokensExpireIn(now()->addDays(30));
-    }
+        $this->registerPolicies();
+
+        // Ensure the Passport routes are registered
+        Passport::ignoreRoutes();
+        $this->registerPolicies();
+        Passport::tokensCan([
+            'ADMIN' => 'Access all resources',
+            'BOUTIQUIER' => 'Manage articles and clients',
+            'CLIENT' => 'Access client-specific resources',
+        ]);
+
+    // Définir la durée de validité des tokens
+    Passport::tokensExpireIn(now()->addDays(15));
+    Passport::refreshTokensExpireIn(now()->addDays(30));
+    Passport::personalAccessTokensExpireIn(now()->addMonths(6));
+}
+
 }
