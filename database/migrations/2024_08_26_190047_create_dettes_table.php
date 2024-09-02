@@ -19,6 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('client_id');
             $table->foreign('client_id')->references('id')->on('clients')->onDelete('cascade');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -27,6 +28,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('dettes');
+        Schema::table('dettes', function (Blueprint $table) {
+            //
+            $table->dropSoftDeletes();
+        });
     }
 };

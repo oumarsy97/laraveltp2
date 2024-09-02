@@ -34,6 +34,7 @@ class RegisterRequest extends FormRequest
             'login' => 'required|string|email|max:255|unique:users',
             'role' => 'required|in:ADMIN,BOUTIQUIER',
             'password' => ['required',new CustomPassword(),'confirmed'],
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
 
         ];
     }

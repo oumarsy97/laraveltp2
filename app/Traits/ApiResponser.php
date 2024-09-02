@@ -1,6 +1,9 @@
 <?php
 namespace App\Traits;
 
+use App\Enums\ResponseStatus;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Response;
 
 trait ApiResponser
@@ -27,8 +30,14 @@ trait ApiResponser
     {
         return response()->json([
             'status' => $status,
-            'data' => $data,
-            'message' => $message
+            'message' => $message,
+            'data' => $data
         ], $code);
+    }
+    public function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            $this->sendResponse(null, $validator->errors(), Response::HTTP_UNPROCESSABLE_ENTITY,ResponseStatus::ECHEC)
+        );
     }
 }

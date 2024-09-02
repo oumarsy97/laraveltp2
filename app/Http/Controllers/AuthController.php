@@ -1,10 +1,13 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Enums\EtatEnum;
 use App\Enums\ResponseStatus;
 use App\Enums\RoleEnum;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\StoreUserRequest;
+use App\Models\Client;
 use App\Models\RefreshToken;
 use App\Models\Role;
 use Illuminate\Http\Request;
@@ -19,40 +22,50 @@ class AuthController extends Controller
 {
     use ApiResponser;
 
-    public function register(RegisterRequest $request)
+    public function store(StoreUserRequest $request)
     {
-        $validator =  $request->only('prenom', 'nom', 'login', 'password');
 
-        $validator['password'] = bcrypt($request->password);
-        if($request->role == 'ADMIN'){
-            $validator['role_id'] = RoleEnum::ADMIN;
-        }else{
-            $validator['role_id'] = RoleEnum::BOUTIQUIER;
+         $validate = $request->validated();
+         $validateRequest = $request->only('client_id');
+         $client = Client::with('user')->findOrFail($validateRequest['client_id']);
+         if($client->user_id!=null){
+             return $this->sendResponse($client, 'Ce client a deja un compte',Response::HTTP_CONFLICT,ResponseStatus::ECHEC);
+         }
+         if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('users', 'public');
+            $validator['photo'] = $path;
         }
+        $validate['password'] = bcrypt($validate['password']);
+        $user = User::create([
+            'nom' => $validate['nom'],
+            'prenom' => $validate['prenom'],
+            'login' => $validate['login'],
+            'password' => $validate['password'],
+            'photo' => $validate['photo'],
+        ]);
 
-        $user = User::create($validator);
+        $user->client()->save($client);
+        $client = Client::with('user')->find($validateRequest['client_id']);
         $token = $user->createToken('api-token')->accessToken;
 
-        return $this->sendResponse(['token' => $token, 'user' => $user], 'utilisateur cree avec succes', Response::HTTP_OK,ResponseStatus::SUCCESS);
+        return $this->sendResponse(['token' => $token, 'client' => $client], 'utilisateur cree avec succes', Response::HTTP_OK,ResponseStatus::SUCCESS);
+
     }
-    public function login(LoginRequest $request)
+
+        public function login(LoginRequest $request)
     {
         try{
-
         $credentials = $request->only('login', 'password');
-
         if (Auth::attempt($credentials)) {
             /** @var \App\Models\User $user **/
-
             $user = Auth::user();
-
-
             $role = Role::find($user->role_id)->libelle;
+            if ($user->etat ==EtatEnum::INACTIF->value) {
+                return $this->sendResponse(null, 'Compte inactif', Response::HTTP_FORBIDDEN,ResponseStatus::ECHEC);
+            }
 
-           $scopes = [$role];
-            $token = $user->createToken('api-token', ['ADMIN'])->accessToken;
+            $token = $user->createToken('api-token')->accessToken;
              $refreshToken = $this->createRefreshToken($user);
-
             return $this->sendResponse(['token' => $token, 'refresh_token' => $refreshToken->token], 'utilisateur connecté avec succes', Response::HTTP_OK,ResponseStatus::SUCCESS);
         }
 

@@ -17,12 +17,12 @@ class Article extends Model
     ];
     public function dettes()
     {
-        return $this->belongsToMany(Dette::class, 'article_dette')
+        return $this->belongsToMany(Dette::class, 'article_dettes', )
                     ->withPivot('qteVente', 'prixVente')
                     ->withTimestamps();
     }
 
-    protected $hidden = ['pivot', 'created_at', 'updated_at', 'deleted_at'];
+    protected $hidden = [ 'created_at', 'updated_at', 'deleted_at'];
 
     protected $casts = [
         'qteStock' => 'integer',

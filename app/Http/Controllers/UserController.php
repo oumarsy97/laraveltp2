@@ -2,58 +2,110 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EtatEnum;
+use App\Enums\ResponseStatus;
+use App\Enums\RoleEnum;
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\StoreUserRequest;
+use App\Models\Client;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Traits\ApiResponser;
+use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
     use ApiResponser;
     //
-    public function index ()
+
+/**
+ * @OA\Get(
+ *     path="/api/users",
+ *     summary="Get list of users",
+ *     tags={"users"},
+ *     @OA\Response(
+ *         response=200,
+ *         description="Successful response",
+ *     ),
+ * )
+ */
+
+    public function index (Request $request)
 {
     try {
-        $users = User::all();
-        return $this->successResponse($users, 'liste des utilisateurs');
+        $role = $request->query('role');
+        $active = $request->query('active');
+
+        $role_id = null;
+        $etat = null;
+
+        switch ($role) {
+
+            case 'admin':
+                $role_id = RoleEnum::ADMIN;
+                break;
+            case 'boutiquier':
+                $role_id = RoleEnum::BOUTIQUIER;
+                break;
+            case 'client':
+                $role_id = RoleEnum::CLIENT;
+                break;
+        }
+
+        switch ($active) {
+            case 'oui':
+                $etat = EtatEnum::ACTIF;
+                break;
+            case 'non':
+                $etat = EtatEnum::INACTIF;
+                break;
+
+        }
+        $query = User::query();
+
+        if ($role_id !== null) {
+            $query->where('role_id', $role_id);
+        }
+
+        if ($etat !== null) {
+            $query->where('etat', $etat);
+        }
+
+        $users = $query->get();
+
+        return $this->sendResponse($users, 'liste des utilisateurs', Response::HTTP_OK, ResponseStatus::SUCCESS);
     } catch (ValidationException $e) {
         return $this->errorResponse($e->errors(), 422);
     }
 }
 
-    public function store(Request $request)
-    {
-
-        try {
-            $validate = $request->validate([
-                'prenom' => 'required|string|max:55|min:3',
-                'nom' => 'required|string|max:55|min:2',
-                'login' => 'required|email|unique:users',
-                'password' => 'required|string|min:8|regex:/[A-Z]/|regex:/[a-z]/|regex:/[0-9]/|regex:/[@$!%*?&]/',
-                'confirm_password' => 'required|same:password',
-                'role' => 'required|in:ADMIN,BOUTIQUIER',
-            ]);
-
-        } catch (ValidationException $e) {
-            return $this->errorResponse($e->errors(), 422);
-        }
-
-
-        $validate['login'] = strtolower($validate['login']);
-
-        $validate['password'] = bcrypt($validate['password']);
-
-        $user = User::where('login', $validate['login'])->first();
-        if ($user) {
-            return $this->errorResponse(null, 'User existe deja', 409);
-        }
-
-        $validate['password'] = bcrypt($validate['password']);
-        $validate['role'] = strtoupper($validate['role']);
-
-        $user = User::create($validate);
-        return $this->successResponse($user, 'User cree avec succes',201);
+//pour creer un compte utilisateur boutiquier ou admin
+public function store(RegisterRequest $request)
+{
+    if ($request->user()->cannot('admin')) {
+        return $this->sendResponse(null, 'Vous n\'avez pas les autorisations requises', Response::HTTP_FORBIDDEN, ResponseStatus::ECHEC);
     }
+
+    $validator = $request->only('prenom', 'nom', 'login', 'password', 'role', 'photo');
+    $validator['password'] = bcrypt($request->password);
+
+    $validator['role_id'] = $request->role == 'ADMIN' ? RoleEnum::ADMIN : RoleEnum::BOUTIQUIER;
+
+     // Gestion de l'upload de photo
+     if ($request->hasFile('photo')) {
+
+        $path = $request->file('photo')->store('users', 'public');
+        $validator['photo'] = $path;
+    }
+
+    $user = User::create($validator);
+    $token = $user->createToken('api-token')->accessToken;
+
+    return $this->sendResponse(['token' => $token, 'user' => $user], 'utilisateur cree avec succes', Response::HTTP_OK, ResponseStatus::SUCCESS);
+}
+
 
     public function update(Request $request, $id)
 {

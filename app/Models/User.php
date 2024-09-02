@@ -12,12 +12,16 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Laravel\Sanctum\HasApiTokens as HasApiTokensTrait;
 use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 class User extends Authenticatable
 {
+    use SoftDeletes;
     use Notifiable;
     use HasFactory;
     use HasApiTokens;
+
 
     public function client(){
         return $this->hasOne(Client::class);
@@ -47,12 +51,14 @@ class User extends Authenticatable
         'nom',
         'login',
         'password',
+        'photo'
     ];
 
     protected $hidden = [
         'password',
         'created_at',
         'updated_at',
+        'deleted_at',
     ];
 
     protected $casts = [

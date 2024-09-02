@@ -30,21 +30,17 @@ class ClientRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'telephone' => ['required', new ValidPhoneNumber()],
+            'telephone' => ['required', new ValidPhoneNumber(),'unique:clients,telephone'],
             'adresse' => 'required|string|max:55',
-            'surnom' => 'required|string|max:55',
+            'surnom' => 'required|string|max:55|unique:clients,surnom',
             'user_id' => 'nullable|exists:users,id',
             'user' => 'nullable|array',
             'user.nom' => 'required_with:user,|string|max:255',
             'user.prenom' => 'required_with:user,|string|max:255',
             'user.login' => 'required_with:user,|email|unique:users,login',
             'user.password' => ['required_with:user,',new CustomPassword(),'confirmed'],
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ];
-        // if ($this->filled('user')) {
-        //     $rules['user'] = [
-        //          'login' => 'email',
-        //     ];
-        // }
 
         return $rules;
     }
@@ -62,9 +58,7 @@ class ClientRequest extends FormRequest
             'user.prenom.required_if' => 'Le prenom de l\'utilisateur est requis si l\'utilisateur est fourni.',
             'user.login.required_if' => 'L\'email de l\'utilisateur est requis si l\'utilisateur est fourni.',
             'user.password.required_if' => 'Le mot de passe de l\'utilisateur est requis si l\'utilisateur est fourni.',
-
-
-
+            'user.password.confirmed' => 'Le mot de passe de l\'utilisateur doit être confirme.',
         ];
     }
 

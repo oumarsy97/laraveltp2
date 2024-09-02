@@ -3,8 +3,12 @@
 namespace App\Providers;
 
 // use Illuminate\Support\Facades\Gate;
+
+use App\Models\User;
+use App\Policies\UserPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Laravel\Passport\Passport;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -14,7 +18,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        //
+        User::class => UserPolicy::class,
     ];
 
     /**
@@ -34,16 +38,14 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->registerPolicies();
 
         // Ensure the Passport routes are registered
         Passport::ignoreRoutes();
         $this->registerPolicies();
-        Passport::tokensCan([
-            'ADMIN' => 'Access all resources',
-            'BOUTIQUIER' => 'Manage articles and clients',
-            'CLIENT' => 'Access client-specific resources',
-        ]);
+
+    Gate::define('admin', [UserPolicy::class, 'isAdmin']);
+    Gate::define('boutiquier', [UserPolicy::class, 'isBoutiquier']);
+    Gate::define('client', [UserPolicy::class, 'isClient']);
 
     // Définir la durée de validité des tokens
     Passport::tokensExpireIn(now()->addDays(15));

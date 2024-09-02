@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('libelle')->unique();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -23,6 +24,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::table('roles', function (Blueprint $table) {
+            //
+            $table->dropSoftDeletes();
+        });
     }
 };

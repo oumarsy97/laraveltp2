@@ -16,7 +16,7 @@ class CustomPassword implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         // Définir les règles du mot de passe
-        $passwordRules = Password::min(8) // Minimum de 8 caractères
+        $passwordRules = Password::min(5) // Minimum de 8 caractères
             ->mixedCase()  // Au moins une majuscule
             ->letters()    // Au moins une lettre
             ->numbers()    // Au moins un chiffre

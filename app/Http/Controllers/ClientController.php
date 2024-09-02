@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EtatEnum;
 use App\Http\Requests\ClientRequest;
 use App\Http\Requests\UserRequest;
 use App\Http\Resources\ClientResource;
@@ -14,71 +15,143 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Validator;
 use Spatie\QueryBuilder\QueryBuilder;
 use App\Enums\ResponseStatus;
-use App\Rules\CustomPassword;
+use App\Http\Requests\TelephoneRequest;
+use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Response;
 
 class ClientController extends Controller
 {
     use ApiResponser;
     //
-    public function index( Request $request)
-{
-    // $clients = Client::with('user')->paginate(10);
-    $include = $request->has('include')?  [$request->input('include')] : [];
-    $data = Client::with($include)->whereNotNull('user_id')->get();
-    $clients = QueryBuilder::for(Client::class)
-            ->allowedFilters(['surname'])
-            ->allowedIncludes(['user'])
-            ->get();
+    public function index(Request $request)
+    {
+        $compte = $request->query('compte');
+        $active = $request->query('active');
+        $user = null;
+        $etat = null;
 
 
-        return  ApiResponser::sendResponse($clients, 'Clients trouvés',200, ResponseStatus::SUCCESS);
-    // return $this->successResponse($clients, 'Clients trouvés', 200);
+        // Déterminer la valeur du filtre pour l'état actif/inactif des utilisateurs
+        switch ($active) {
+            case 'oui':
+                $etat = EtatEnum::ACTIF->value;
+                break;
+            case 'non':
+                $etat = EtatEnum::INACTIF->value;
+                break;
+        }
 
-    if(!$clients){
-        return  $this->errorResponse(' clients non trouvés', 404);
+        // Déterminer la valeur du filtre pour le compte utilisateur
+        switch ($compte) {
+            case 'oui':
+                $user = 1;
+                break;
+            case 'non':
+                $user = 0;
+                break;
+        }
+
+
+        // Commencer la requête pour les clients
+        $query = Client::query();
+        if($user == 1){
+            $query->whereNotNull('user_id')->with('user');
+        }
+        if($user!= null && $user == 0){
+            $query->whereNull('user_id');
+        }
+        if($etat == 'actif'){
+            $query->whereNotNull('user_id')->with('user');
+        }
+        if ($etat === 'actif') {
+            $query->whereHas('user', function ($query) {
+                $query->where('etat', '=', EtatEnum::ACTIF->value);
+            });
+            $query->with('user');
+
+        } elseif ($etat === 'inactif') {
+            $query->whereHas('user', function ($query) {
+                $query->where('etat', '=', EtatEnum::INACTIF->value);
+            });
+            $query->with('user');
+        }
+
+        $clients = $query->get();
+
+        return $this->sendResponse($clients, 'Clients trouvés', Response::HTTP_OK, ResponseStatus::SUCCESS);
     }
 
-    return $this->successResponse($clients, 'Clients trouvés', 200);
- }
-
- public function show(Request $request, $id)
+    public function findByTelephone(TelephoneRequest $request)
 {
-    $include = $request->has('include')?  [$request->input('include')] : [];
-    $data = Client::with($include)->whereNotNull('user_id')->get();
-    //  dd($data);
-    return new ClientResource($data);
+    try {
+        $telephone = $request->validated()['telephone'];
+        $client = Client::where('telephone', $telephone)->first();
+        return  $this->successResponse($client, 'Client retrieved successfully', 200);
+    } catch (ModelNotFoundException $e) {
+        return  $this->errorResponse(null,'Client not found', 404);
+    }
+
+}
+
+
+public function show( $id)
+{
+     $data = Client::with('user')->find($id);
+     $client = new ClientResource($data);
     if(!$client){
         return  $this->errorResponse(null,'Client not found', 404);
     }
-    return  $this->successResponse($client, 'Client retrieved successfully', 200);
+    return  $this->sendResponse($client, 'Client retrieved successfully',Response::HTTP_OK,ResponseStatus::SUCCESS);
 }
+
+public function findUser ( $id){
+    $client = Client::with('user')->find($id);
+    if(!$client){
+        return  $this->errorResponse(null,'Client non trouvé', 404);
+    }
+    return  $this->sendResponse($client, 'Client retrovée avec succes',Response::HTTP_OK,ResponseStatus::SUCCESS);
+}
+
+public function findDettes ($id){
+    try{
+    $client = Client::with('dettes')->find($id);
+    if(!$client){
+        return  $this->sendResponse(null,'Client non trouvé',Response::HTTP_NOT_FOUND,ResponseStatus::ECHEC);
+    }
+    return  $this->sendResponse($client, 'Client retrovée avec succes',Response::HTTP_OK,ResponseStatus::SUCCESS);
+    } catch (Exception $e) {
+        return  $this->sendResponse(null,$e->getMessage(),Response::HTTP_BAD_REQUEST,ResponseStatus::ECHEC);
+    }
+}
+
 
 
  public function store(ClientRequest $request)
 {
     DB::beginTransaction(); // Démarrer une transaction
-
  try {
-
     $data = $request->validated();
-    // dd($data);
-     $client = Client::create($data);
+    $client = Client::create($data);
 
     if ($request->has('user')) {
-
         $userData = $request->input('user');
-        $userData['role'] ='CLIENT';
+        $userData['password'] = bcrypt($userData['password']);
         $user = User::create($userData);
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('users', 'public');
+            $validator['photo'] = $path;
+        }
         $user->client()->save($client);
     }
 
     DB::commit(); // Terminer la transaction
-
-    return $this->successResponse($client, 'Client créé avec succès', 201);
+    $client = Client::with('user')->find($client->id);
+    return $this->sendResponse($client, 'Client creé avec succès', Response::HTTP_OK,ResponseStatus::SUCCESS);
 
 } catch (ValidationException $e) {
     DB::rollBack();
-     return  ApiResponser::sendResponse($e->errors(), $e->getMessage(),ResponseStatus::ECHEC, 422);
+     return  ApiResponser::sendResponse($e->errors(), $e->getMessage(),Response::HTTP_UNPROCESSABLE_ENTITY,ResponseStatus::ECHEC);
 }
  }
 

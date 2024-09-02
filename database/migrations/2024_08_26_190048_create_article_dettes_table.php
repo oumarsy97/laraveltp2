@@ -13,13 +13,14 @@ return new class extends Migration
     {
         Schema::create('article_dettes', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('id_article');
-            $table->unsignedBigInteger('id_dette');
+            $table->unsignedBigInteger('article_id');
+            $table->unsignedBigInteger('dette_id');
             $table->integer('qteVente');
             $table->decimal('prixVente', 8, 2);
             $table->foreign('id_article')->references('id')->on('articles')->onDelete('cascade');
             $table->foreign('id_dette')->references('id')->on('dettes')->onDelete('cascade');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -28,6 +29,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('article_dettes');
+        Schema::table('article_dettes', function (Blueprint $table) {
+            //
+            $table->dropSoftDeletes();
+        });
     }
 };

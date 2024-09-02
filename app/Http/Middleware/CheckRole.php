@@ -18,16 +18,16 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        // Vérifier si l'utilisateur est authentifié
-        if (!$request->user()) {
-            return redirect('/login'); // Redirigez vers la page de login ou retournez une réponse d'erreur
-        }
+        if (!$request->user() || !$request->user()->role) {
+        return $this->sendResponse(null, 'non autorisé',Response::HTTP_FORBIDDEN,ResponseStatus::ECHEC);
+    }
 
-        // Vérifier si l'utilisateur a l'un des rôles requis
-        if (!in_array($request->user()->role, $roles)) {
-            return $this->sendResponse(null, 'non autorisé',Response ::HTTP_FORBIDDEN,ResponseStatus::ECHEC) ; // Retournez une réponse 403 Forbidden
+    foreach ($roles as $role) {
+        if ($request->user()->can($role)) {
+            return $next($request);
         }
+    }
 
-        return $next($request);
+    return $this->sendResponse(null, 'non autorisé',Response::HTTP_FORBIDDEN,ResponseStatus::ECHEC);
     }
 }
