@@ -1,0 +1,1406 @@
+info:
+  title: Coronatime API
+  description: Here goes description
+  version: 0.1.9
+
+servers:
+  - url: http://localhost:3000/wane/v1
+    description: local server
+  - url: http://producation.app/api
+    description: production server
+openapi: 3.0.0
+
+tags:
+  - name: Users
+    description: Manage users
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nom:
+          type: string
+          example: "Doe"
+        prenom:
+          type: string
+          example: "John"
+        login:
+          type: string
+          example: "johndoe"
+        password:
+          type: string
+          format: password
+          example: "Password123!"
+        photo:
+          type: string
+          format: uri
+          example: "https://example.com/path/to/photo.jpg"
+      required:
+        - nom
+        - prenom
+        - login
+        - password
+    Article:
+      type: object
+      properties:
+        libelle:
+          type: string
+          description: Le libellé de l'article
+          example: "Chaussures de sport"
+        prix:
+          type: number
+          format: float
+          description: Le prix de l'article
+          example: 59.99
+        qteStock:
+          type: integer
+          description: La quantité en stock de l'article
+          example: 100
+      required:
+        - libelle
+        - prix
+        - qteStock
+    Dette:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID de la dette
+        montant:
+          type: number
+          format: float
+          description: Montant de la dette
+        client_id:
+          type: integer
+          description: ID du client
+        utilisateur_id:
+          type: integer
+          description: ID de l'utilisateur
+        date:
+          type: string
+          format: date
+          description: Date de la dette
+    Client:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID du client
+        surnom:
+          type: string
+          description: Surnom du client
+        telephone:
+          type: string
+          description: Telephone du client
+        adrresse:
+          type: string
+          description: Adresse du client
+      required:
+        - surnom
+        - telephone
+
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:
+  /login:
+    post:
+      operationId: login
+      summary: Login
+      description: Authenticate a user and return a token
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                password:
+                  type: string
+              required:
+                - login
+                - password
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                      refresh_token:
+                        type: string
+        '401':
+          description: Unauthenticated
+
+  /register:
+    post:
+      operationId: register
+      summary: Register a new user
+      description: Register a new user with the provided details
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom:
+                  type: string
+                prenom:
+                  type: string
+                login:
+                  type: string
+                password:
+                  type: string
+                password_confirmation:
+                  type: string
+                photo:
+                  type: string
+                client_id:
+                  type: integer
+              required:
+                - nom
+                - prenom
+                - login
+                - password
+                - password_confirmation
+                - client_id
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        nom:
+                          type: string
+                        prenom:
+                          type: string
+                        login:
+                          type: string
+                        photo:
+                          type: string
+                  message:
+                    type: string
+                  status:
+                    type: string
+        '401':
+          description: Unauthenticated
+
+  /logout:
+    post:
+      operationId: logout
+      summary: Logout
+      description: Logout
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthenticated
+
+  /users:
+    get:
+      summary: Get a list of users
+      tags:
+        - Users
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+      security:
+        - bearerAuth: []
+
+  /users/{id}:
+    get:
+
+
+      summary: Get a user
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the use
+      responses:
+        '200':
+          description: A user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+
+
+    delete:
+      summary: Delete a user
+      tags:
+        - Users
+      responses:
+        '200':
+          description: A user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+
+
+    put:
+      summary: Update a user
+      tags:
+        - Users
+      responses:
+        '200':
+          description: A user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+
+  /clients:
+    get:
+      summary: Get a list of clients with filters
+      parameters:
+        - in: query
+          name: compte
+          required: false
+          schema:
+            type: string
+            enum: [oui, non]
+          description: Filter clients based on whether they have a user account
+        - in: query
+          name: active
+          required: false
+          schema:
+            type: string
+            enum: [oui, non]
+          description: Filter clients based on whether their associated user account is active
+      responses:
+        '200':
+          description: A list of clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: Client ID
+                    name:
+                      type: string
+                      description: Client name
+                    user:
+                      type: object
+                      nullable: true
+                      properties:
+                        id:
+                          type: integer
+                          description: User ID
+                        etat:
+                          type: string
+                          description: User state (actif or inactif)
+      tags:
+        - Clients
+      security:
+        - bearerAuth: []
+
+  /clients/telephone:
+    post:
+      operationId: findByTelephone
+      tags:
+        - Clients
+      summary: "Récupérer un client par numéro de téléphone"
+      description: "Cette méthode permet de récupérer un client spécifique en fonction de son numéro de téléphone."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                telephone:
+                  type: string
+                  description: "Numéro de téléphone du client à rechercher"
+                  example: "+1234567890"
+              required:
+                - telephone
+      responses:
+        '200':
+          description: "Client récupéré avec succès"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '404':
+          description: "Client non trouvé"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Client not found"
+        '400':
+          description: "Bad Request - Requête invalide"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid request"
+  /clients/{id}:
+    get:
+      operationId: showClient
+      tags:
+        - Clients
+      summary: "Afficher les détails d'un client spécifique"
+      description: "Cette méthode permet de récupérer les détails d'un client en fonction de son ID."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID du client à récupérer"
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: "Client récupéré avec succès"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '404':
+          description: "Client non trouvé"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Client not found"
+        '500':
+          description: "Erreur interne du serveur"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Une erreur s'est produite"
+    put:
+      operationId: updateClient
+      tags:
+        - Clients
+      summary: "Mettre à jour un client existant"
+      description: "Cette méthode permet de mettre à jour un client ainsi que ses informations utilisateur associées si nécessaire."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID du client à mettre à jour"
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom:
+                  type: string
+                  example: "Doe"
+                prenom:
+                  type: string
+                  example: "John"
+                telephone:
+                  type: string
+                  example: "+1234567890"
+                email:
+                  type: string
+                  format: email
+                  example: "john.doe@example.com"
+                user:
+                  type: object
+                  properties:
+                    login:
+                      type: string
+                      example: "jdoe"
+                    password:
+                      type: string
+                      format: password
+                      example: "newpassword123"
+                    confirm_password:
+                      type: string
+                      format: password
+                      example: "newpassword123"
+                photo:
+                  type: string
+                  format: binary
+                  description: "Photo de l'utilisateur"
+              required:
+                - nom
+                - prenom
+                - telephone
+                - email
+      responses:
+        '200':
+          description: "Client mis à jour avec succès"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientWithUser'
+        '422':
+          description: "Erreur de validation"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+        '404':
+          description: "Client non trouvé"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Client non trouvé"
+        '500':
+          description: "Erreur interne du serveur"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Une erreur s'est produite"
+  /clients/{id}/dettes:
+    get:
+      operationId: findDettes
+
+      summary: "Afficher les dettes d'un client spécifique"
+      tags:
+        - Clients
+      description: "Cette méthode permet de récupérer toutes les dettes associées à un client en fonction de son ID."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID du client pour lequel récupérer les dettes"
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: "Client retrouvé avec succès avec ses dettes"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientWithDettes'
+        '404':
+          description: "Client non trouvé"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Client non trouvé"
+        '400':
+          description: "Requête invalide"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Une erreur s'est produite"
+
+    post:
+      operationId: storeClient
+      tags:
+        - Clients
+      summary: "Créer un nouveau client"
+      description: "Cette méthode permet de créer un nouveau client et, éventuellement, un utilisateur associé avec une photo."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom:
+                  type: string
+                  example: "Doe"
+                prenom:
+                  type: string
+                  example: "John"
+                telephone:
+                  type: string
+                  example: "+1234567890"
+                email:
+                  type: string
+                  format: email
+                  example: "john.doe@example.com"
+                user:
+                  type: object
+                  properties:
+                    login:
+                      type: string
+                      example: "jdoe"
+                    password:
+                      type: string
+                      format: password
+                      example: "password123"
+                photo:
+                  type: string
+                  format: binary
+                  description: "Photo de l'utilisateur"
+              required:
+                - nom
+                - prenom
+                - telephone
+                - email
+      responses:
+        '200':
+          description: "Client créé avec succès"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientWithUser'
+        '422':
+          description: "Erreur de validation"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+        '500':
+          description: "Erreur interne du serveur"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Une erreur s'est produite"
+
+
+  /articles:
+    get:
+      operationId: getArticles
+      summary: Récupérer la liste des articles
+      description: Cette méthode permet de récupérer une liste d'articles en fonction de leur disponibilité en stock.
+      tags:
+        - Articles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: disponible
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["oui", "non"]
+          description: Filtrer les articles par disponibilité en stock ('oui' pour les articles disponibles, 'non' pour les articles en rupture de stock).
+      responses:
+        '200':
+          description: Liste des articles récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Article"
+        '404':
+          description: Aucun article trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No article found
+
+  /articles/{id}:
+    put:
+      summary: Mettre à jour un article
+      description: Cette méthode permet de mettre à jour les informations d'un article.
+      tags:
+        - Articles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de l'article à mettre à jour
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                qteStock:
+                  type: integer
+                  example: 10
+              required:
+                - qteStock
+      responses:
+        '200':
+          description: Quantité en stock mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Article"
+        '403':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Unauthorized
+        '404':
+          description: Article introuvable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Article introuvable
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: La quantité en stock ne peut pas être négative
+    get:
+      summary: Récupérer un article par ID
+      description: Cette méthode permet de récupérer les détails d'un article en utilisant son ID.
+      tags:
+        - Articles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de l'article à récupérer
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Article retrouvé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Article"
+        '404':
+          description: Article introuvable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Article introuvable
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: La demande est incorrecte
+
+  /articles/libelle:
+    get:
+      summary: Obtenir les détails d'un article
+      tags:
+        - Articles
+      description: Cette méthode permet d'obtenir les détails d'un article par son ILibelle
+        - Articles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de l'article à récupérer
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Article retrouvé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Article"
+        '404':
+          description: Article introuvable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Article introuvable
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Validation failed
+    /articles/{id}:
+    put:
+      summary: Mettre à jour les quantités en stock des articles
+      description: Cette méthode permet de mettre à jour les quantités en stock pour plusieurs articles.
+      tags:
+        - Articles
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                articles:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: ID de l'article
+                      qteStock:
+                        type: integer
+                        description: Quantité en stock à ajouter
+              required:
+                - articles
+      responses:
+        '200':
+          description: Quantités en stock mises à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Article'
+                  errors:
+                    type: array
+                    items:
+                      type: integer
+                      description: ID des articles qui n'ont pas pu être mis à jour
+                  message:
+                    type: string
+                    example: Stock mis à jour avec succès
+        '403':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Non autorisé
+        '400':
+          description: Mauvaise requête
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: La quantité en stock ne peut pas être négative
+
+  /dettes:
+    get:
+      summary: Liste des dettes
+      tags:
+        - Dette
+      parameters:
+        - name: solde
+          in: query
+          required: false
+          description: Liste des dettes avec ou sans solde
+          schema:
+            type: string
+            enum:
+              - oui
+              - non
+      responses:
+        '200':
+          description: Liste des dettes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dette'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+
+    post:
+      summary: Créer une nouvelle dette
+      description: Cette méthode permet de créer une nouvelle dette en enregistrant les détails de la dette, en mettant à jour les quantités des articles et en enregistrant un paiement associé si nécessaire.
+      tags:
+        - Dette
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientId:
+                  type: integer
+                  description: ID du client
+                montant:
+                  type: number
+                  format: float
+                  description: Montant total de la dette
+                paiement:
+                  type: object
+                  properties:
+                    montant:
+                      type: number
+                      format: float
+                      description: Montant du paiement effectué
+                articles:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      articleId:
+                        type: integer
+                        description: ID de l'article
+                      qteVente:
+                        type: integer
+                        description: Quantité vendue de l'article
+                      prixVente:
+                        type: number
+                        format: float
+                        description: Prix de vente de l'article
+              required:
+                - clientId
+                - montant
+                - paiement
+                - articles
+      responses:
+        '200':
+          description: Dette enregistrée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dette'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Quantité insuffisante pour l'article ID: 1"
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Une erreur s'est produite lors de l'enregistrement de la dette.
+
+  /dettes/{id}:
+    get:
+      summary: Afficher une dette spécifique
+      description: Cette méthode permet de récupérer une dette spécifique par son ID.
+      tags:
+        - Dette
+      operationId: showDette
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la dette
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dette trouvée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dette'
+        '404':
+          description: Dette introuvable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Dette introuvable
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Une erreur s'est produite
+  delete:
+      summary: Supprimer une dette spécifique
+      description: Cette méthode permet de supprimer une dette spécifique par son ID.
+      tags:
+        - Dette
+      operationId: deleteDette
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la dette
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dette supprimée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Dette supprimée avec succes
+        '404':
+          description: Dette introuvable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Dette introuvable
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Une erreur s'est produite
+
+  /dettes/{id}/articles:
+    get:
+      summary: Liste des articles d'une dette spécifique
+      description: Cette méthode permet de récupérer la liste des articles associés à une dette spécifique par son ID.
+      tags:
+        - Dette
+      operationId: listArticleDette
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la dette
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste des articles de la dette récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      montant:
+                        type: number
+                        format: float
+                        example: 100.00
+                      client_id:
+                        type: integer
+                        example: 2
+                      articles:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 10
+                            libelle:
+                              type: string
+                              example: Article Example
+                            prix:
+                              type: number
+                              format: float
+                              example: 50.00
+                            qteStock:
+                              type: integer
+                              example: 20
+                            qteVente:
+                              type: integer
+                              example: 5
+                            prixVente:
+                              type: number
+                              format: float
+                              example: 50.00
+        '403':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Vous n'avez pas les autorisations requises
+        '404':
+          description: Dette introuvable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Dette introuvable
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Une erreur s'est produite
+
+  /dettes/{id}/paiements:
+    get:
+      summary: Liste des paiements d'une dette spécifique
+      description: Cette méthode permet de récupérer la liste des paiements associés à une dette spécifique par son ID.
+      tags:
+        - Dette
+      operationId: listPaiementDette
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la dette
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste des paiements de la dette récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      montant:
+                        type: number
+                        format: float
+                        example: 100.00
+                      client_id:
+                        type: integer
+                        example: 2
+                      paiements:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 10
+                            montant:
+                              type: number
+                              format: float
+                              example: 50.00
+                            date:
+                              type: string
+                              format: date-time
+                              example: '2024-09-03T10:00:00Z'
+        '403':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Vous n'avez pas les autorisations requises
+        '404':
+          description: Dette introuvable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Dette introuvable
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Une erreur s'est produite
+  /dettes/{id}/paiement:
+    post:
+      summary: Effectuer un paiement pour une dette spécifique
+      description: Cette méthode permet d'enregistrer un paiement pour une dette spécifique par son ID. Vérifie également si le montant restant est supérieur à zéro.
+      tags:
+        - Dette
+      operationId: paiementDette
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la dette
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                montant:
+                  type: number
+                  format: float
+                  example: 50.00
+                  description: Montant du paiement à ajouter à la dette
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Paiement effectué avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      montantRestant:
+                        type: number
+                        format: float
+                        example: 50.00
+                      montantDu:
+                        type: number
+                        format: float
+                        example: 150.00
+                      paiements:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 10
+                            montant:
+                              type: number
+                              format: float
+                              example: 50.00
+                            date:
+                              type: string
+                              format: date-time
+                              example: '2024-09-03T10:00:00Z'
+        '403':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Vous n'avez pas les autorisations requises
+        '409':
+          description: Conflit
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: La dette est déjà payée ou le montant est supérieur au montant restant
+        '404':
+          description: Dette introuvable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Dette introuvable
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Une erreur s'est produite
+

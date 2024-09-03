@@ -25,6 +25,7 @@ Route::get('/api/documentation', function () {
     return view('vendor.l5-swagger');
 });
 Route::post('/v1/login', [AuthController::class, 'login']);
+Route::post('/v1/logout', [AuthController::class, 'logout']);
 
 Route::prefix('/v1/')->group(function () {
 

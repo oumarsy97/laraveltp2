@@ -1,35 +1,1117 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "Titre de votre API",
-        "description": "Une description de votre API",
-        "contact": {
-            "email": "votre-email@example.com"
-        },
-        "license": {
-            "name": "MIT",
-            "url": "https://opensource.org/licenses/MIT"
-        },
+        "title": "API Documentation",
+        "description": "Documentation de l'API pour le projet",
         "version": "1.0.0"
     },
     "servers": [
+        {
+            "url": "http://127.0.0.1:3000/wane/v1",
+            "description": "Serveur API de développement"
+        },
         {
             "url": ""
         }
     ],
     "paths": {
-        "/api/users": {
+        "/register": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register",
+                "description": "Register",
+                "operationId": "register",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nom",
+                                    "prenom",
+                                    "login",
+                                    "password",
+                                    "password_confirmation",
+                                    "client_id"
+                                ],
+                                "properties": {
+                                    "nom": {
+                                        "type": "string"
+                                    },
+                                    "prenom": {
+                                        "type": "string"
+                                    },
+                                    "login": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string"
+                                    },
+                                    "photo": {
+                                        "type": "string"
+                                    },
+                                    "client_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "nom": {
+                                                        "type": "string"
+                                                    },
+                                                    "prenom": {
+                                                        "type": "string"
+                                                    },
+                                                    "login": {
+                                                        "type": "string"
+                                                    },
+                                                    "photo": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login",
+                "description": "Login",
+                "operationId": "login",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "login",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "login": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "refresh_token": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                }
+            }
+        },
+        "/refresh": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refresh",
+                "description": "Refresh",
+                "operationId": "refresh",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "refresh_token"
+                                ],
+                                "properties": {
+                                    "refresh_token": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "token": {
+                                            "type": "string"
+                                        },
+                                        "refresh_token": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout",
+                "description": "Logout",
+                "operationId": "logout",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                }
+            }
+        },
+        "/dettes": {
             "get": {
                 "tags": [
-                    "users"
+                    "Dette"
+                ],
+                "summary": "Liste des dettes",
+                "operationId": "271cccc424ec9cadaf0baf93c11088ac",
+                "responses": {
+                    "200": {
+                        "description": "Liste des dettes"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Dette"
+                ],
+                "summary": "Enregistre une nouvelle dette",
+                "description": "Cette méthode permet d'enregistrer une nouvelle dette pour un client, avec les articles et le paiement associé.",
+                "operationId": "storeDette",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreDetteRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Dette enregistrée avec succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Dette"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Requête invalide"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    },
+                    "403": {
+                        "description": "Accès refusé"
+                    },
+                    "500": {
+                        "description": "Erreur interne du serveur"
+                    }
+                }
+            }
+        },
+        "/dettes/{id}": {
+            "get": {
+                "tags": [
+                    "Dette"
+                ],
+                "summary": "Afficher une dette spécifique",
+                "description": "Cette méthode permet de récupérer une dette spécifique par son ID.",
+                "operationId": "showDette",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la dette",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dette trouvée avec succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Dette"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Dette introuvable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Dette introuvable"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur interne du serveur",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Une erreur s'est produite"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Dette"
+                ],
+                "summary": "Supprimer une dette spécifique",
+                "description": "Cette méthode permet de supprimer une dette spécifique par son ID.",
+                "operationId": "deleteDette",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la dette",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dette supprimée avec succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Dette supprimée avec succes"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Dette introuvable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Dette introuvable"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur interne du serveur",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Une erreur s'est produite"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "tags": [
+                    "Users"
                 ],
                 "summary": "Get list of users",
-                "operationId": "c457726701591d1183b53aa71fc13441",
+                "operationId": "7e2f5799553ec93c9c43e2a58490d447",
                 "responses": {
                     "200": {
                         "description": "Successful response"
+                    },
+                    "default": {
+                        "description": "unexpected error"
                     }
                 }
+            }
+        },
+        "/users/{id}": {
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update an existing user",
+                "description": "Updates the details of an existing user.",
+                "operationId": "updateUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the user to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "prenom",
+                                    "nom",
+                                    "login",
+                                    "password",
+                                    "password_confirmation",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "prenom": {
+                                        "type": "string",
+                                        "example": "John"
+                                    },
+                                    "nom": {
+                                        "type": "string",
+                                        "example": "Doe"
+                                    },
+                                    "login": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "johndoe@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newpassword123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newpassword123"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ADMIN",
+                                            "BOUTIQUIER"
+                                        ],
+                                        "example": "ADMIN"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "prenom": {
+                                            "type": "string",
+                                            "example": "John"
+                                        },
+                                        "nom": {
+                                            "type": "string",
+                                            "example": "Doe"
+                                        },
+                                        "login": {
+                                            "type": "string",
+                                            "example": "johndoe@example.com"
+                                        },
+                                        "role": {
+                                            "type": "string",
+                                            "example": "ADMIN"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2023-09-01T12:34:56Z"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2023-09-01T12:34:56Z"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity: Validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "errors": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found: User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update an existing user",
+                "description": "Creates a new user",
+                "operationId": "createUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the user to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "prenom",
+                                    "nom",
+                                    "login",
+                                    "password",
+                                    "password_confirmation",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "prenom": {
+                                        "type": "string",
+                                        "example": "John"
+                                    },
+                                    "nom": {
+                                        "type": "string",
+                                        "example": "Doe"
+                                    },
+                                    "login": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "johndoe@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newpassword123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newpassword123"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ADMIN",
+                                            "BOUTIQUIER"
+                                        ],
+                                        "example": "ADMIN"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "prenom": {
+                                            "type": "string",
+                                            "example": "John"
+                                        },
+                                        "nom": {
+                                            "type": "string",
+                                            "example": "Doe"
+                                        },
+                                        "login": {
+                                            "type": "string",
+                                            "example": "johndoe@example.com"
+                                        },
+                                        "role": {
+                                            "type": "string",
+                                            "example": "ADMIN"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2023-09-01T12:34:56Z"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2023-09-01T12:34:56Z"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity: Validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "errors": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found: User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete a user",
+                "description": "Deletes a user by ID.",
+                "operationId": "deleteUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the user to be deleted",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "prenom": {
+                                            "type": "string",
+                                            "example": "John"
+                                        },
+                                        "nom": {
+                                            "type": "string",
+                                            "example": "Doe"
+                                        },
+                                        "login": {
+                                            "type": "string",
+                                            "example": "johndoe@example.com"
+                                        },
+                                        "role": {
+                                            "type": "string",
+                                            "example": "ADMIN"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2023-09-01T12:34:56Z"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2023-09-01T12:34:56Z"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found: User not found"
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity: Validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "errors": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Dette": {
+                "title": "Dette",
+                "description": "Model representing a Dette",
+                "required": [
+                    "id",
+                    "montantTotal",
+                    "montantRestant",
+                    "dateEcheance"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "ID de la dette",
+                        "type": "integer"
+                    },
+                    "montantTotal": {
+                        "description": "Montant total de la dette",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "montantRestant": {
+                        "description": "Montant restant de la dette",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "dateEcheance": {
+                        "description": "Date d'échéance de la dette",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "created_at": {
+                        "description": "Date de création de la dette",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Date de mise à jour de la dette",
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "StoreDetteRequest": {
+                "title": "StoreDetteRequest",
+                "required": [
+                    "clientId",
+                    "montant",
+                    "articles",
+                    "paiement"
+                ],
+                "properties": {
+                    "clientId": {
+                        "description": "ID du client",
+                        "type": "integer"
+                    },
+                    "montant": {
+                        "description": "Montant total de la dette",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "articles": {
+                        "description": "Liste des articles associés à la dette",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "articleId": {
+                                    "description": "ID de l'article",
+                                    "type": "integer"
+                                },
+                                "qteVente": {
+                                    "description": "Quantité vendue",
+                                    "type": "integer"
+                                },
+                                "prixVente": {
+                                    "description": "Prix de vente de l'article",
+                                    "type": "number",
+                                    "format": "float"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "paiement": {
+                        "description": "Informations sur le paiement",
+                        "properties": {
+                            "montant": {
+                                "description": "Montant du paiement",
+                                "type": "number",
+                                "format": "float"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "Article": {
+                "title": "Article",
+                "description": "Schéma représentant un article.",
+                "properties": {
+                    "id": {
+                        "description": "Identifiant unique de l'article",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "libelle": {
+                        "description": "Libelle de l'article",
+                        "type": "string",
+                        "example": "T-shirt"
+                    },
+                    "description": {
+                        "description": "Description de l'article",
+                        "type": "string",
+                        "example": "T-shirt en coton, taille M"
+                    },
+                    "prix": {
+                        "description": "Prix de l'article",
+                        "type": "number",
+                        "format": "float",
+                        "example": 19.99
+                    },
+                    "qteStock": {
+                        "description": "Quantité en stock de l'article",
+                        "type": "integer",
+                        "example": 100
+                    },
+                    "created_at": {
+                        "description": "Date de création de l'article",
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-09-01T12:00:00Z"
+                    },
+                    "updated_at": {
+                        "description": "Date de dernière mise à jour de l'article",
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-09-01T12:00:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "StoreArticleRequest": {
+                "title": "StoreArticleRequest",
+                "description": "Schéma représentant la requête pour créer un nouvel article.",
+                "required": [
+                    "nom",
+                    "description",
+                    "prix",
+                    "qteStock"
+                ],
+                "properties": {
+                    "nom": {
+                        "description": "Nom de l'article",
+                        "type": "string",
+                        "example": "T-shirt"
+                    },
+                    "description": {
+                        "description": "Description de l'article",
+                        "type": "string",
+                        "example": "T-shirt en coton, taille M"
+                    },
+                    "prix": {
+                        "description": "Prix de l'article",
+                        "type": "number",
+                        "format": "float",
+                        "example": 19.99
+                    },
+                    "qteStock": {
+                        "description": "Quantité en stock de l'article",
+                        "type": "integer",
+                        "example": 100
+                    },
+                    "photo": {
+                        "description": "Image de l'article (optionnel)",
+                        "type": "string",
+                        "format": "binary",
+                        "example": "photo.jpg"
+                    }
+                },
+                "type": "object"
+            },
+            "User": {
+                "title": "User",
+                "description": "User model schema",
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier for the user",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "prenom": {
+                        "description": "First name of the user",
+                        "type": "string"
+                    },
+                    "nom": {
+                        "description": "Last name of the user",
+                        "type": "string"
+                    },
+                    "email": {
+                        "description": "Email address of the user",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "description": "Password for the user",
+                        "type": "string",
+                        "format": "password"
+                    },
+                    "phone": {
+                        "description": "Phone number of the user",
+                        "type": "string"
+                    },
+                    "role": {
+                        "description": "Role of the user in the system",
+                        "type": "string"
+                    }
+                },
+                "type": "object",
+                "example": {
+                    "id": 1,
+                    "prenom": "John",
+                    "nom": "Doe",
+                    "email": "john.doe@example.com",
+                    "password": "password123",
+                    "phone": "+1234567890",
+                    "role": "admin"
+                }
+            }
+        },
+        "responses": {
+            "401": {
+                "description": "Unauthorized",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "Unauthenticated."
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "parameters": {
+            "solde": {
+                "name": "solde",
+                "in": "query",
+                "description": "Liste des dettes avec ou sans solde",
+                "required": false,
+                "schema": {
+                    "type": "string",
+                    "enum": [
+                        "oui",
+                        "non"
+                    ]
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "JWT authorization header using the Bearer scheme",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
             }
         }
     }

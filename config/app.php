@@ -170,6 +170,8 @@ return [
         App\Providers\RouteServiceProvider::class,
         Laravel\Sanctum\SanctumServiceProvider::class,
          L5Swagger\L5SwaggerServiceProvider::class,
+         App\Providers\ArticleServiceProvider::class,
+         App\Providers\ClientServiceProvider::class,
 
 
     ])->toArray(),

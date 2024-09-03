@@ -17,10 +17,107 @@ use App\Traits\ApiResponser;
 use Illuminate\Support\Str;
 use \Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Annotations as OA;
 
 class AuthController extends Controller
 {
     use ApiResponser;
+
+    /**
+     * @OA\Post(
+     *      path="/register",
+     *      operationId="register",
+     *      tags={"Auth"},
+     *      summary="Register",
+     *      description="Register",
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\MediaType(
+     *              mediaType="application/json",
+     *              @OA\Schema(
+     *                  @OA\Property(
+     *                      property="nom",
+     *                      type="string",
+     *                  ),
+     *                  @OA\Property(
+     *                      property="prenom",
+     *                      type="string",
+     *                  ),
+     *                  @OA\Property(
+     *                      property="login",
+     *                      type="string",
+     *                  ),
+     *                  @OA\Property(
+     *                      property="password",
+     *                      type="string",
+     *                  ),
+     *                  @OA\Property(
+     *                      property="password_confirmation",
+     *                      type="string",
+     *                  ),
+     *                  @OA\Property(
+     *                      property="photo",
+     *                      type="string",
+     *                  ),
+     *                  @OA\Property(
+     *                      property="client_id",
+     *                      type="integer",
+     *                  ),
+     *                  required={"nom","prenom","login","password","password_confirmation","client_id"}
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\MediaType(
+     *              mediaType="application/json",
+     *              @OA\Schema(
+     *                  @OA\Property(
+     *                      property="data",
+     *                      type="array",
+     *                      @OA\Items(
+     *                          @OA\Property(
+     *                              property="id",
+     *                              type="integer",
+     *                          ),
+     *                          @OA\Property(
+     *                              property="nom",
+     *                              type="string",
+     *                          ),
+     *                          @OA\Property(
+     *                              property="prenom",
+     *                              type="string",
+     *                          ),
+     *                          @OA\Property(
+     *                              property="login",
+     *                              type="string",
+     *                          ),
+     *                          @OA\Property(
+     *                              property="photo",
+     *                              type="string",
+     *                          )
+
+     *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="message",
+     *                      type="string",
+     *                  ),
+     *                  @OA\Property(
+     *                      property="status",
+     *                      type="string",
+     *                  )
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *
+     )
+     * )
+     **/
 
     public function store(StoreUserRequest $request)
     {
@@ -52,6 +149,58 @@ class AuthController extends Controller
 
     }
 
+    /**
+     * @OA\Post(
+     *      path="/login",
+     *      operationId="login",
+     *      tags={"Auth"},
+     *      summary="Login",
+     *      description="Login",
+     *      @OA\RequestBody(
+
+     *          @OA\MediaType(
+     *              mediaType="application/json",
+     *              @OA\Schema(
+     *                  @OA\Property(
+     *                      property="login",
+     *                      type="string",
+     *                  ),
+     *                  @OA\Property(
+     *                      property="password",
+     *                      type="string",
+     *                  ),
+     *                  required={"login", "password"}
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\MediaType(
+     *              mediaType="application/json",
+     *              @OA\Schema(
+     *                  @OA\Property(
+     *                      property="data",
+     *                      type="object",
+     *                      @OA\Property(
+     *                          property="token",
+     *                          type="string",
+     *                      ),
+     *                      @OA\Property(
+     *                          property="refresh_token",
+     *                          type="string",
+     *                      )
+     *                  ),
+     *
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *      ),
+     )
+     */
         public function login(LoginRequest $request)
     {
         try{
@@ -63,8 +212,9 @@ class AuthController extends Controller
             if ($user->etat ==EtatEnum::INACTIF->value) {
                 return $this->sendResponse(null, 'Compte inactif', Response::HTTP_FORBIDDEN,ResponseStatus::ECHEC);
             }
+           
 
-            $token = $user->createToken('api-token')->accessToken;
+            $token = $user->createToken(['api-token', ['*']])->accessToken;
              $refreshToken = $this->createRefreshToken($user);
             return $this->sendResponse(['token' => $token, 'refresh_token' => $refreshToken->token], 'utilisateur connecté avec succes', Response::HTTP_OK,ResponseStatus::SUCCESS);
         }
@@ -75,6 +225,56 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     *  @OA\Post(
+     *      path="/refresh",
+     *      operationId="refresh",
+     *      tags={"Auth"},
+     *      summary="Refresh",
+     *      description="Refresh",
+     *      @OA\RequestBody(
+
+     *          @OA\MediaType(
+     *              mediaType="application/json",
+     *              @OA\Schema(
+     *                  @OA\Property(
+     *                      property="refresh_token",
+     *                      type="string",
+     *                  ),
+     *                  required={"refresh_token"}
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\MediaType(
+     *              mediaType="application/json",
+     *              @OA\Schema(
+
+     *                  @OA\Property(
+     *                      property="token",
+     *                      type="string",
+     *                  ),
+     *                  @OA\Property(
+     *                      property="refresh_token",
+     *                      type="string",
+     *                  )
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *      ),
+     *      @OA\Response(
+     *          response=400,
+     *          description="Bad Request",
+     *      )
+     *      )
+     *      )
+     *
+     */
     public function refresh(Request $request)
     {
         $request->validate([
@@ -118,6 +318,34 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     *  @OA\Post(
+     *      path="/logout",
+     *      operationId="logout",
+     *      tags={"Auth"},
+     *      summary="Logout",
+     *      description="Logout",
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\MediaType(
+     *              mediaType="application/json",
+     *              @OA\Schema(
+
+     *                  @OA\Property(
+     *                      property="message",
+     *                      type="string",
+     *                  )
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *      )
+     *      )
+     *      )
+     * */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();

@@ -14,12 +14,39 @@ use App\Models\Paiement;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use OpenApi\Annotations as OA;
 
 
 class DetteController extends Controller
 {
 
+
+
+    /**
+     * @OA\Get(
+     *      path="/dettes",
+     *      summary="Liste des dettes",
+     *      tags={"Dette"},
+     *      @OA\Response(response="200", description="Liste des dettes"),
+     *   )
+     *  @OA\Parameter(
+     *      name="solde",
+     *      in="query",
+     *      required=false,
+     *      @OA\Schema(
+     *          type="string",
+     *          enum={"oui", "non"}
+     *      ),
+     *      description="Liste des dettes avec ou sans solde",
+     *
+     *   )
+     *  @OA\Response(
+     *      response=401,
+     *      description="Unauthorized",
+     *      @OA\JsonContent(
+     *          @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *      )
+     *   )
+     */
    public function index(Request $request)
     {
         $solde = $request->query('solde');
@@ -35,6 +62,41 @@ class DetteController extends Controller
 
         return $this->sendResponse($dette, 'Liste des dettes', Response::HTTP_OK,ResponseStatus::SUCCESS);
     }
+
+/**
+ * @OA\Post(
+ *     path="/dettes",
+ *     operationId="storeDette",
+ *     tags={"Dette"},
+ *     summary="Enregistre une nouvelle dette",
+ *     description="Cette méthode permet d'enregistrer une nouvelle dette pour un client, avec les articles et le paiement associé.",
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(ref="#/components/schemas/StoreDetteRequest")
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Dette enregistrée avec succès",
+ *         @OA\JsonContent(ref="#/components/schemas/Dette")
+ *     ),
+ *     @OA\Response(
+ *         response=400,
+ *         description="Requête invalide"
+ *     ),
+ *     @OA\Response(
+ *         response=401,
+ *         description="Non authentifié"
+ *     ),
+ *     @OA\Response(
+ *         response=403,
+ *         description="Accès refusé"
+ *     ),
+ *     @OA\Response(
+ *         response=500,
+ *         description="Erreur interne du serveur"
+ *     )
+ * )
+ */
 
     public function store(StoreDetteRequest $request)
 {
@@ -85,6 +147,50 @@ catch (\Exception $e) {
 
 }
 
+/**
+ * @OA\Get(
+ *     path="/dettes/{id}",
+ *     operationId="showDette",
+ *     tags={"Dette"},
+ *     summary="Afficher une dette spécifique",
+ *     description="Cette méthode permet de récupérer une dette spécifique par son ID.",
+ *     @OA\Parameter(
+ *         name="id",
+ *         in="path",
+ *         required=true,
+ *         @OA\Schema(type="integer"),
+ *         description="ID de la dette"
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Dette trouvée avec succès",
+ *         @OA\JsonContent(ref="#/components/schemas/Dette")
+ *     ),
+ *     @OA\Response(
+ *         response=404,
+ *         description="Dette introuvable",
+ *         @OA\JsonContent(
+ *             @OA\Property(
+ *                 property="message",
+ *                 type="string",
+ *                 example="Dette introuvable"
+ *             )
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=500,
+ *         description="Erreur interne du serveur",
+ *         @OA\JsonContent(
+ *             @OA\Property(
+ *                 property="message",
+ *                 type="string",
+ *                 example="Une erreur s'est produite"
+ *             )
+ *         )
+ *     )
+ * )
+ */
+
 public function show($id)
 {
     try{
@@ -99,6 +205,56 @@ catch (\Exception $e) {
 }
 
 }
+
+/**
+ * @OA\Delete(
+ *     path="/dettes/{id}",
+ *     operationId="deleteDette",
+ *     tags={"Dette"},
+ *     summary="Supprimer une dette spécifique",
+ *     description="Cette méthode permet de supprimer une dette spécifique par son ID.",
+ *     @OA\Parameter(
+ *         name="id",
+ *         in="path",
+ *         required=true,
+ *         @OA\Schema(type="integer"),
+ *         description="ID de la dette"
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Dette supprimée avec succès",
+ *         @OA\JsonContent(
+ *             @OA\Property(
+ *                 property="message",
+ *                 type="string",
+ *                 example="Dette supprimée avec succes"
+ *             )
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=404,
+ *         description="Dette introuvable",
+ *         @OA\JsonContent(
+ *             @OA\Property(
+ *                 property="message",
+ *                 type="string",
+ *                 example="Dette introuvable"
+ *             )
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=500,
+ *         description="Erreur interne du serveur",
+ *         @OA\JsonContent(
+ *             @OA\Property(
+ *                 property="message",
+ *                 type="string",
+ *                 example="Une erreur s'est produite"
+ *             )
+ *         )
+ *     )
+ * )
+ */
 
 public function destroy($id)
 {

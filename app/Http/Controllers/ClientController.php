@@ -15,7 +15,10 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Validator;
 use Spatie\QueryBuilder\QueryBuilder;
 use App\Enums\ResponseStatus;
+use App\Facades\ClientFacade;
+use App\Facades\ServiceFacade;
 use App\Http\Requests\TelephoneRequest;
+use App\Services\Contracts\IClientService;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
@@ -23,75 +26,27 @@ use Illuminate\Http\Response;
 class ClientController extends Controller
 {
     use ApiResponser;
-    //
-    public function index(Request $request)
-    {
-        $compte = $request->query('compte');
-        $active = $request->query('active');
-        $user = null;
-        $etat = null;
+    protected IClientService $clientService;
 
-
-        // Déterminer la valeur du filtre pour l'état actif/inactif des utilisateurs
-        switch ($active) {
-            case 'oui':
-                $etat = EtatEnum::ACTIF->value;
-                break;
-            case 'non':
-                $etat = EtatEnum::INACTIF->value;
-                break;
+        public function __construct(IClientService $clientService) {
+            $this->clientService = $clientService;
         }
 
-        // Déterminer la valeur du filtre pour le compte utilisateur
-        switch ($compte) {
-            case 'oui':
-                $user = 1;
-                break;
-            case 'non':
-                $user = 0;
-                break;
+        public function index(Request $request) {
+            $compte = $request->query('compte');
+            $active = $request->query('active');
+
+           $clients = $this->clientService->filteredClients($compte, $active);
+        return $clients;
+
         }
 
 
-        // Commencer la requête pour les clients
-        $query = Client::query();
-        if($user == 1){
-            $query->whereNotNull('user_id')->with('user');
-        }
-        if($user!= null && $user == 0){
-            $query->whereNull('user_id');
-        }
-        if($etat == 'actif'){
-            $query->whereNotNull('user_id')->with('user');
-        }
-        if ($etat === 'actif') {
-            $query->whereHas('user', function ($query) {
-                $query->where('etat', '=', EtatEnum::ACTIF->value);
-            });
-            $query->with('user');
-
-        } elseif ($etat === 'inactif') {
-            $query->whereHas('user', function ($query) {
-                $query->where('etat', '=', EtatEnum::INACTIF->value);
-            });
-            $query->with('user');
-        }
-
-        $clients = $query->get();
-
-        return $this->sendResponse($clients, 'Clients trouvés', Response::HTTP_OK, ResponseStatus::SUCCESS);
-    }
 
     public function findByTelephone(TelephoneRequest $request)
 {
-    try {
-        $telephone = $request->validated()['telephone'];
-        $client = Client::where('telephone', $telephone)->first();
-        return  $this->successResponse($client, 'Client retrieved successfully', 200);
-    } catch (ModelNotFoundException $e) {
-        return  $this->errorResponse(null,'Client not found', 404);
-    }
-
+     $telephone = $request->input('telephone');
+     return ServiceFacade::findByTelephone($telephone);
 }
 
 
