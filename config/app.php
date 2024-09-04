@@ -172,6 +172,7 @@ return [
          L5Swagger\L5SwaggerServiceProvider::class,
          App\Providers\ArticleServiceProvider::class,
          App\Providers\ClientServiceProvider::class,
+         App\Providers\TokenServiceProvider::class,
 
 
     ])->toArray(),
@@ -190,6 +191,7 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
+        'Upload' => App\Facades\UploadFacade::class,
     ])->toArray(),
 
 ];

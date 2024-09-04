@@ -8,12 +8,19 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
 use Illuminate\Support\Str;
 use App\Enums\EnumRole;
+use App\Events\ImageUploaded;
+use App\Jobs\SendLoyaltyCard;
+use App\Jobs\StoreImageInCloud;
+use App\Mail\CarteFideliteMail;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Laravel\Sanctum\HasApiTokens as HasApiTokensTrait;
 use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Mail;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class User extends Authenticatable
 {
@@ -68,6 +75,50 @@ class User extends Authenticatable
     public function role()
     {
         return $this->belongsTo(Role::class);
+    }
+    // Définir un scope pour ajouter des données cryptées au token
+    public function scopeWithEncryptedClaims(Builder $query)
+    {
+        return $query->get()->map(function ($user) {
+            $user->setAttribute('encryptedClaims', base64_encode(json_encode([
+                'user_id' => $user->id,
+                'login' => $user->login,
+                'role' => $user->role->libelle,
+            ])));
+            return $user;
+        });
+    }
+
+
+    protected static function boot()
+    {
+        parent::boot();
+
+
+
+        static::created(function ($user) {
+            if (request()->hasFile('photo')) {
+                $file = request()->file('photo');
+
+                // Sauvegarder le fichier temporairement
+                $tempPath = $file->store('temp');
+
+                StoreImageInCloud::dispatch($user, $tempPath);
+            }
+
+
+            $text ="".$user->login;
+   $qrCodePath = '../app/qrcodes/test_qrcode.png';
+        QrCode::format('png')->size(300)->generate($text, $qrCodePath);
+        $pdfContent = Pdf::loadView('pdf.loyalty_card', ['user' => $user, 'qrCodePath' => $qrCodePath])->output();
+    $pdfPath = '/home/seydina/LARAVEL/tp2T/resources/views/pdf/loyalty_card.'. Str::random(10) . '.pdf';
+    file_put_contents($pdfPath, $pdfContent);
+     Mail::to($user->login)->send(new CarteFideliteMail($user, $pdfPath));
+     //supprimer le pdf
+     unlink($pdfPath);
+
+
+        });
     }
 }
 

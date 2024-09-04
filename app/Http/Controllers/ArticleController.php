@@ -3,6 +3,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Article;
 use App\Services\Contracts\IArticleService;
 use Illuminate\Http\Request;
 
@@ -51,5 +52,15 @@ class ArticleController extends Controller
             return response()->json(['message' => 'Article deleted'], 200);
         }
         return response()->json(['message' => 'Article not found'], 404);
+    }
+
+    public function findbyLibelle(Request $request)
+    {
+        $libelle = $request->input('libelle'); // Obtenir le libelle depuis la requête
+
+    // Utiliser le scope pour filtrer les articles
+    $articles = Article::byLibelle($libelle)->get();
+
+    return $articles;
     }
 }

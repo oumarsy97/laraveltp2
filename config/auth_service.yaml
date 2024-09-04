@@ -1,0 +1,3 @@
+# config/auth_service.yaml
+auth_service:
+  type: passport # ou sanctum

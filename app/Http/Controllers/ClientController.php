@@ -35,7 +35,6 @@ class ClientController extends Controller
         public function index(Request $request) {
             $compte = $request->query('compte');
             $active = $request->query('active');
-
            $clients = $this->clientService->filteredClients($compte, $active);
         return $clients;
 
@@ -45,8 +44,7 @@ class ClientController extends Controller
 
     public function findByTelephone(TelephoneRequest $request)
 {
-     $telephone = $request->input('telephone');
-     return ServiceFacade::findByTelephone($telephone);
+     return ServiceFacade::findByTelephone( $request->telephone);
 }
 
 

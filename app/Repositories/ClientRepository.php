@@ -1,6 +1,7 @@
 <?php
 namespace App\Repositories;
 
+use App\Http\Requests\TelephoneRequest;
 use App\Models\Client;
 use App\Repositories\Contracts\IClientRepository ;
 
@@ -43,5 +44,10 @@ class ClientRepository implements IClientRepository
     public function findByEtat(string $etat)
     {
         return Client::where('etat', $etat)->get();
+    }
+
+    public function findByTelephone(String $telephone)
+    {
+       return   Client::first();
     }
 }

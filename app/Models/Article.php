@@ -22,6 +22,18 @@ class Article extends Model
                     ->withTimestamps();
     }
 
+     /**
+     * Scope a query to filter articles by libelle.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $libelle
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeByLibelle($query, $libelle)
+    {
+        return $query->where('libelle', 'like', "%{$libelle}%");
+    }
+
     protected $hidden = [ 'created_at', 'updated_at', 'deleted_at'];
 
     protected $casts = [

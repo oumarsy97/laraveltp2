@@ -4,224 +4,108 @@ namespace App\Http\Controllers;
 use App\Enums\EtatEnum;
 use App\Enums\ResponseStatus;
 use App\Enums\RoleEnum;
+use App\Events\ImageUploaded;
+use App\Facades\UploadFacade;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\StoreUserRequest;
+use App\Mail\CarteFideliteMail;
+use App\Mail\LoyaltyCardMail;
 use App\Models\Client;
 use App\Models\RefreshToken;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Services\CarteFideliteService;
+use App\Services\Contracts\LoyaltyCardServiceInterface;
+use App\Services\Contracts\TokenServiceInterface;
 use App\Traits\ApiResponser;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
 use \Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Annotations as OA;
+use Illuminate\Support\Facades\Mail;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class AuthController extends Controller
 {
     use ApiResponser;
+    protected $tokenService;
+    protected $loyaltyCardService;
 
-    /**
-     * @OA\Post(
-     *      path="/register",
-     *      operationId="register",
-     *      tags={"Auth"},
-     *      summary="Register",
-     *      description="Register",
-     *      @OA\RequestBody(
-     *          required=true,
-     *          @OA\MediaType(
-     *              mediaType="application/json",
-     *              @OA\Schema(
-     *                  @OA\Property(
-     *                      property="nom",
-     *                      type="string",
-     *                  ),
-     *                  @OA\Property(
-     *                      property="prenom",
-     *                      type="string",
-     *                  ),
-     *                  @OA\Property(
-     *                      property="login",
-     *                      type="string",
-     *                  ),
-     *                  @OA\Property(
-     *                      property="password",
-     *                      type="string",
-     *                  ),
-     *                  @OA\Property(
-     *                      property="password_confirmation",
-     *                      type="string",
-     *                  ),
-     *                  @OA\Property(
-     *                      property="photo",
-     *                      type="string",
-     *                  ),
-     *                  @OA\Property(
-     *                      property="client_id",
-     *                      type="integer",
-     *                  ),
-     *                  required={"nom","prenom","login","password","password_confirmation","client_id"}
-     *              )
-     *          )
-     *      ),
-     *      @OA\Response(
-     *          response=200,
-     *          description="Successful operation",
-     *          @OA\MediaType(
-     *              mediaType="application/json",
-     *              @OA\Schema(
-     *                  @OA\Property(
-     *                      property="data",
-     *                      type="array",
-     *                      @OA\Items(
-     *                          @OA\Property(
-     *                              property="id",
-     *                              type="integer",
-     *                          ),
-     *                          @OA\Property(
-     *                              property="nom",
-     *                              type="string",
-     *                          ),
-     *                          @OA\Property(
-     *                              property="prenom",
-     *                              type="string",
-     *                          ),
-     *                          @OA\Property(
-     *                              property="login",
-     *                              type="string",
-     *                          ),
-     *                          @OA\Property(
-     *                              property="photo",
-     *                              type="string",
-     *                          )
-
-     *                      )
-     *                  ),
-     *                  @OA\Property(
-     *                      property="message",
-     *                      type="string",
-     *                  ),
-     *                  @OA\Property(
-     *                      property="status",
-     *                      type="string",
-     *                  )
-     *              )
-     *          )
-     *      ),
-     *      @OA\Response(
-     *          response=401,
-     *          description="Unauthenticated",
-     *
-     )
-     * )
-     **/
-
-    public function store(StoreUserRequest $request)
+    public function __construct(TokenServiceInterface $tokenService, LoyaltyCardServiceInterface $loyaltyCardService)
     {
-
-         $validate = $request->validated();
-         $validateRequest = $request->only('client_id');
-         $client = Client::with('user')->findOrFail($validateRequest['client_id']);
-         if($client->user_id!=null){
-             return $this->sendResponse($client, 'Ce client a deja un compte',Response::HTTP_CONFLICT,ResponseStatus::ECHEC);
-         }
-         if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('users', 'public');
-            $validator['photo'] = $path;
-        }
-        $validate['password'] = bcrypt($validate['password']);
-        $user = User::create([
-            'nom' => $validate['nom'],
-            'prenom' => $validate['prenom'],
-            'login' => $validate['login'],
-            'password' => $validate['password'],
-            'photo' => $validate['photo'],
-        ]);
-
-        $user->client()->save($client);
-        $client = Client::with('user')->find($validateRequest['client_id']);
-        $token = $user->createToken('api-token')->accessToken;
-
-        return $this->sendResponse(['token' => $token, 'client' => $client], 'utilisateur cree avec succes', Response::HTTP_OK,ResponseStatus::SUCCESS);
-
+        $this->tokenService = $tokenService;
+        $this->loyaltyCardService = $loyaltyCardService;
     }
 
-    /**
-     * @OA\Post(
-     *      path="/login",
-     *      operationId="login",
-     *      tags={"Auth"},
-     *      summary="Login",
-     *      description="Login",
-     *      @OA\RequestBody(
+    public function store(StoreUserRequest $request)
+{
+    $validated = $request->validated();
+    $clientId = $request->input('client_id');
 
-     *          @OA\MediaType(
-     *              mediaType="application/json",
-     *              @OA\Schema(
-     *                  @OA\Property(
-     *                      property="login",
-     *                      type="string",
-     *                  ),
-     *                  @OA\Property(
-     *                      property="password",
-     *                      type="string",
-     *                  ),
-     *                  required={"login", "password"}
-     *              )
-     *          )
-     *      ),
-     *      @OA\Response(
-     *          response=200,
-     *          description="Successful operation",
-     *          @OA\MediaType(
-     *              mediaType="application/json",
-     *              @OA\Schema(
-     *                  @OA\Property(
-     *                      property="data",
-     *                      type="object",
-     *                      @OA\Property(
-     *                          property="token",
-     *                          type="string",
-     *                      ),
-     *                      @OA\Property(
-     *                          property="refresh_token",
-     *                          type="string",
-     *                      )
-     *                  ),
-     *
-     *              )
-     *          )
-     *      ),
-     *      @OA\Response(
-     *          response=401,
-     *          description="Unauthenticated",
-     *      ),
-     )
-     */
-        public function login(LoginRequest $request)
+    // Trouver le client
+    $client = Client::with('user')->findOrFail($clientId);
+
+    if ($client->user_id !== null) {
+        return $this->sendResponse($client, 'Ce client a déjà un compte', Response::HTTP_CONFLICT, ResponseStatus::ECHEC);
+    }
+
+    $photoPath = null;
+
+    // Créer l'utilisateur
+    $user = User::create([
+        'nom' => $validated['nom'],
+        'prenom' => $validated['prenom'],
+        'login' => $validated['login'],
+        'password' => bcrypt($validated['password']),
+        'photo' => $photoPath, // Stocker le chemin de l'image
+    ]);
+
+    // Associer l'utilisateur au client
+    $client->user()->associate($user);
+    $client->save();
+
+      $client = Client::with('user')->find($clientId);
+
+
+    return [
+        // 'photo_base64' => $photoBase64, // Inclure la base64 dans la réponse
+        'client' => $client,
+    ];
+
+
+}
+
+
+
+    public function login(LoginRequest $request)
     {
-        try{
-        $credentials = $request->only('login', 'password');
-        if (Auth::attempt($credentials)) {
-            /** @var \App\Models\User $user **/
-            $user = Auth::user();
-            $role = Role::find($user->role_id)->libelle;
-            if ($user->etat ==EtatEnum::INACTIF->value) {
-                return $this->sendResponse(null, 'Compte inactif', Response::HTTP_FORBIDDEN,ResponseStatus::ECHEC);
-            }
-           
+        try {
+            $credentials = $request->only('login', 'password');
 
-            $token = $user->createToken(['api-token', ['*']])->accessToken;
-             $refreshToken = $this->createRefreshToken($user);
-            return $this->sendResponse(['token' => $token, 'refresh_token' => $refreshToken->token], 'utilisateur connecté avec succes', Response::HTTP_OK,ResponseStatus::SUCCESS);
-        }
+            if (Auth::attempt($credentials)) {
+                /** @var \App\Models\User $user **/
+                $user = Auth::user();
 
-        return $this->sendResponse(null, 'login ou mot de passe incorrects', Response::HTTP_UNAUTHORIZED,ResponseStatus::ECHEC);
-        }catch(\Exception $e){
-            return $this->sendResponse(null, $e->getMessage(), Response::HTTP_BAD_REQUEST,ResponseStatus::ECHEC);
+                if ($user->etat == EtatEnum::INACTIF->value) {
+                    return $this->sendResponse(null, 'Compte inactif', Response::HTTP_FORBIDDEN, ResponseStatus::ECHEC);
+                }
+
+                $tokenString = $this->tokenService->createToken($user);
+                $refreshToken = $this->tokenService->createRefreshToken($user);
+
+                return [
+                    'token' => $tokenString,
+                    'refresh_token' => $refreshToken,
+                ];
+             }
+
+            return $this->sendResponse(null, 'Login ou mot de passe incorrects', Response::HTTP_UNAUTHORIZED, ResponseStatus::ECHEC);
+        } catch (\Exception $e) {
+            return $this->sendResponse(null, $e->getMessage(), Response::HTTP_BAD_REQUEST, ResponseStatus::ECHEC);
         }
     }
 

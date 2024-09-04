@@ -2,6 +2,9 @@
 namespace App\Services;
 
 use App\Enums\EtatEnum;
+use App\Exceptions\RepositoryException;
+use App\Exceptions\ServiceException;
+use App\Http\Requests\TelephoneRequest;
 use App\Models\Client;
 use App\Services\Contracts\IClientService;
 use App\Repositories\Contracts\IClientRepository;
@@ -84,6 +87,17 @@ class ClientService implements IClientService
         }
 
         return $query->get();
+    }
+
+    public function findByTelephone( String $telephone)
+    {
+        try{
+
+            return  Client::first();
+        }
+        catch (\Exception $e) {
+            throw new ServiceException("Erreur dans le service: " . $e->getMessage(), $e->getCode());
+        }
     }
 
 }

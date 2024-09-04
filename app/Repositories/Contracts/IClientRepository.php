@@ -10,4 +10,5 @@ interface IClientRepository
     public function delete(int $id);
     public function findByLibelle(string $libelle);
     public function findByEtat(string $etat);
+    public function findByTelephone(string $telephone);
 }

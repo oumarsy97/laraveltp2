@@ -21,15 +21,16 @@ class ResponseMiddleware
         // Check if the response is a JsonResponse
         if ($response instanceof JsonResponse) {
             $originalData = $response->getData(true);
+            $message = $originalData['message'] ?? 'Success';
+            $status = $originalData['status'] ?? true;
 
             // Format the response
             $formattedResponse = [
-                'status' => true, // Or other logic to determine success
-                'message' => $originalData['message'] ?? 'Success', // Default message if not provided
-                'data' => $originalData['data'] ?? $originalData, // Default to original data if not structured
+                'status' => $status,
+                'message' => $message,
+                'data' => $originalData['data'] ?? [],
             ];
-
-            // return response()->json($formattedResponse, $response->getStatusCode());
+             return response()->json($formattedResponse, $response->getStatusCode());
         }
 
         return $response;
