@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Jobs\SendEmailJob;
 use App\Models\Scopes\TelephoneScope;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Str;
 
 
 class Client extends Model
@@ -35,11 +38,25 @@ class Client extends Model
 
     protected static function booted()
     {
-        // Vérifie si le téléphone est présent dans les conditions de la requête
         $telephone = request()->input('telephone');
         if ($telephone) {
             static::addGlobalScope(new TelephoneScope($telephone));
         }
+
+        static::created(function ($client) {
+             if($client->user!=null){
+                $user = $client->user;
+                $text ="".$user->login;
+                $qrCodePath = '../app/qrcodes/test_qrcode.png';
+                QrCode::format('png')->size(300)->generate($text, $qrCodePath);
+                $pdfContent = Pdf::loadView('pdf.loyalty_card', ['user' => $user, 'qrCodePath' => $qrCodePath])->output();
+                $pdfPath = '/home/seydina/LARAVEL/tp2T/resources/views/pdf/loyalty_card.'. Str::random(10) . '.pdf';
+                file_put_contents($pdfPath, $pdfContent);
+                $pdfPath = storage_path('app/qrcodes/qrcode_' . $client->id . '.pdf');
+                SendEmailJob::dispatch($user, $pdfPath);
+                unlink($pdfPath);
+             }
+        });
     }
 
 

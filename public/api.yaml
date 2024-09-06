@@ -36,7 +36,7 @@ components:
           format: password
           example: "Password123!"
         photo:
-          type: string
+          type: file
           format: uri
           example: "https://example.com/path/to/photo.jpg"
       required:
@@ -99,6 +99,34 @@ components:
         adrresse:
           type: string
           description: Adresse du client
+        user:
+            type: object
+            required: false
+            description: "Détails de l'utilisateur associé"
+            properties:
+                  login:
+                    type: string
+                    format: email
+                    description: "Email de l'utilisateur"
+                  prenom :
+                    type: string
+                    description: "Prénom de l'utilisateur"
+                  nom:
+                    type: string
+                    description: "Nom de l'utilisateur"
+                  photo :
+                    type: string
+                    format: uri
+                    description: "Photo de l'utilisateur"
+                  password:
+                    type: string
+                    format: password
+                    description: "Mot de passe de l'utilisateur"
+
+                  password_confirmation:
+                    type: string
+                    format: password
+                    description: "Confirmation du mot de passe de l'utilisateur"
       required:
         - surnom
         - telephone
@@ -310,6 +338,28 @@ paths:
           description: Unauthenticated
 
   /clients:
+    post:
+      summary: Create a new client
+      tags:
+        - Clients
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Client"
+      responses:
+        '200':
+          description: A client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+
+        '401':
+          description: Unauthenticated
+
+
     get:
       summary: Get a list of clients with filters
       parameters:

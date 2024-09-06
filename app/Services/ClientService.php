@@ -2,12 +2,17 @@
 namespace App\Services;
 
 use App\Enums\EtatEnum;
+use App\Enums\ResponseStatus;
 use App\Exceptions\RepositoryException;
 use App\Exceptions\ServiceException;
 use App\Http\Requests\TelephoneRequest;
 use App\Models\Client;
+use App\Models\User;
 use App\Services\Contracts\IClientService;
 use App\Repositories\Contracts\IClientRepository;
+use Exception;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class ClientService implements IClientService
 {
@@ -30,8 +35,32 @@ class ClientService implements IClientService
 
     public function createClient(array $data)
     {
-        return $this->clientRepository->create($data);
+        DB::beginTransaction(); // Démarrer une transaction
+ try {
+    $client = Client::create($data);
+
+    if (isset($data['user']) && $data['user']!=null) {
+        $userData = $data['user'];
+        $userData['password'] = bcrypt($userData['password']);
+        $user = User::create($userData);
+        $user->client()->save($client);
     }
+
+    DB::commit(); // Terminer la transaction
+    $client = Client::with('user')->find($client->id);
+    return [
+
+        'status' => ResponseStatus::SUCCESS,
+        'message' => 'Client enregistré avec succes',
+        'data' => $client,
+        'code' => Response::HTTP_OK
+    ];
+} catch (Exception $e) {
+    DB::rollBack();
+    return new ServiceException($e->getMessage(), Response::HTTP_BAD_REQUEST, ResponseStatus::ECHEC);
+}
+
+}
 
     public function updateClient(int $id, array $data)
     {

@@ -9,6 +9,8 @@ use App\Facades\UploadFacade;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\StoreUserRequest;
+use App\Jobs\SendEmailJob;
+use App\Jobs\StoreImageInCloud;
 use App\Mail\CarteFideliteMail;
 use App\Mail\LoyaltyCardMail;
 use App\Models\Client;
@@ -67,13 +69,23 @@ class AuthController extends Controller
     // Associer l'utilisateur au client
     $client->user()->associate($user);
     $client->save();
+    //recuperer l'image
+    if ($request->hasFile('photo')) {
+        $file = $request->file('photo');
+        $tempPath = $file->store('temp');
+        // StoreImageInCloud::dispatch($user, $tempPath);
+    }
 
-      $client = Client::with('user')->find($clientId);
+    SendEmailJob::dispatch($user, $tempPath);
+    //   $client = Client::with('user')->find($clientId);
 
 
     return [
         // 'photo_base64' => $photoBase64, // Inclure la base64 dans la réponse
-        'client' => $client,
+        'data' => $client,
+        'message' => 'Client creé avec succès',
+        'status' => ResponseStatus::SUCCESS,
+        'code' => Response::HTTP_OK
     ];
 
 

@@ -2,10 +2,17 @@
 
 namespace App\Http;
 
+use App\Jobs\RetryLocalPhotos;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
 {
+
+//     protected function schedule(Schedule $schedule)
+// {
+//     $schedule->command('app:execute-every-three-seconds')->everyThreeSeconds();
+// }
     /**
      * The application's global HTTP middleware stack.
      *
@@ -77,4 +84,17 @@ class Kernel extends HttpKernel
 
 
     ];
+    protected function schedule(Schedule $schedule)
+{
+    // $schedule->command('inspire')->hourly();
+    $schedule->command('photos:retry')->everyThirtySeconds();
+}
+
+    protected function commands()
+    {
+        // $this->load(__DIR__.'/Commands');
+
+        require base_path('routes/console.php');
+    }
+
 }

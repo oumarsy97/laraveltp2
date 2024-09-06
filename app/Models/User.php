@@ -58,7 +58,8 @@ class User extends Authenticatable
         'nom',
         'login',
         'password',
-        'photo'
+        'photo',
+        'role_id',
     ];
 
     protected $hidden = [
@@ -96,29 +97,26 @@ class User extends Authenticatable
 
 
 
-        static::created(function ($user) {
-            if (request()->hasFile('photo')) {
-                $file = request()->file('photo');
+        // static::created(function ($user) {
+        //     if (request()->hasFile('photo')) {
+        //         $file = request()->file('photo');
+        //         // Sauvegarder le fichier temporairement
+        //         $tempPath = $file->store('temp');
+        //         StoreImageInCloud::dispatch($user, $tempPath);
+        //     }
 
-                // Sauvegarder le fichier temporairement
-                $tempPath = $file->store('temp');
+            // if($user->role->libelle == 'CLIENT'){
+                // $text ="".$user->login;
+                // $qrCodePath = '../app/qrcodes/test_qrcode.png';
+                // QrCode::format('png')->size(300)->generate($text, $qrCodePath);
+                // $pdfContent = Pdf::loadView('pdf.loyalty_card', ['user' => $user, 'qrCodePath' => $qrCodePath])->output();
+                // $pdfPath = '/home/seydina/LARAVEL/tp2T/resources/views/pdf/loyalty_card.'. Str::random(10) . '.pdf';
+                // file_put_contents($pdfPath, $pdfContent);
+                // Mail::to($user->login)->send(new CarteFideliteMail($user, $pdfPath));
+                // unlink($pdfPath);
 
-                StoreImageInCloud::dispatch($user, $tempPath);
-            }
-
-
-            $text ="".$user->login;
-   $qrCodePath = '../app/qrcodes/test_qrcode.png';
-        QrCode::format('png')->size(300)->generate($text, $qrCodePath);
-        $pdfContent = Pdf::loadView('pdf.loyalty_card', ['user' => $user, 'qrCodePath' => $qrCodePath])->output();
-    $pdfPath = '/home/seydina/LARAVEL/tp2T/resources/views/pdf/loyalty_card.'. Str::random(10) . '.pdf';
-    file_put_contents($pdfPath, $pdfContent);
-     Mail::to($user->login)->send(new CarteFideliteMail($user, $pdfPath));
-     //supprimer le pdf
-     unlink($pdfPath);
-
-
-        });
+            // }
+        // });
     }
 }
 

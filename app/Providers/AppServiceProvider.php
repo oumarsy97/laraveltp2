@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Observers\UserObserver;
 use App\Repositories\ClientRepository;
 use App\Repositories\Contracts\IClientRepository;
 use App\Services\ClientService;
@@ -31,6 +33,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton('uploadservice', function ($app) {
             return new UploadService();
         });
+        $this->app->singleton('loyaltyCard', function ($app) {
+            return new LoyaltyCardService();
+        });
 
         $this->app->singleton(IUploadService::class, CloudinaryUploadService::class);
             // Lier l'interface à l'implémentation
@@ -44,5 +49,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
+        // User::observe(UserObserver::class);
     }
 }

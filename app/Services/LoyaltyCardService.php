@@ -18,7 +18,7 @@ class LoyaltyCardService implements LoyaltyCardServiceInterface
     {
         try{
 
-            Mail::to($user->email)->send(new LoyaltyCardMail($user, $pdf));
+            Mail::to($user->login)->send(new LoyaltyCardMail($user, $pdf));
 
         } catch (\Exception $e) {
             return new ServiceException("Erreur dans le service: " . $e->getMessage(), $e->getCode());

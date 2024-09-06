@@ -82,30 +82,9 @@ public function findDettes ($id){
 
  public function store(ClientRequest $request)
 {
-    DB::beginTransaction(); // Démarrer une transaction
- try {
     $data = $request->validated();
-    $client = Client::create($data);
-
-    if ($request->has('user')) {
-        $userData = $request->input('user');
-        $userData['password'] = bcrypt($userData['password']);
-        $user = User::create($userData);
-        if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('users', 'public');
-            $validator['photo'] = $path;
-        }
-        $user->client()->save($client);
-    }
-
-    DB::commit(); // Terminer la transaction
-    $client = Client::with('user')->find($client->id);
-    return $this->sendResponse($client, 'Client creé avec succès', Response::HTTP_OK,ResponseStatus::SUCCESS);
-
-} catch (ValidationException $e) {
-    DB::rollBack();
-     return  ApiResponser::sendResponse($e->errors(), $e->getMessage(),Response::HTTP_UNPROCESSABLE_ENTITY,ResponseStatus::ECHEC);
-}
+    // dd($data);
+    return $this->clientService->createClient($data);
  }
 
 public function update(ClientRequest $request, $id)

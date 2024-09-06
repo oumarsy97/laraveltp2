@@ -5,6 +5,7 @@ namespace App\Events;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use App\Models\User;
+use App\Services\Contracts\IUploadService;
 
 class ImageUploaded
 {
@@ -17,5 +18,12 @@ class ImageUploaded
     {
         $this->user = $user;
         $this->file = $file;
+    }
+
+    public function handle(IUploadService $uploadService)
+    {
+        $uploadService->upload($this->file);
+        
+
     }
 }

@@ -3,14 +3,15 @@
 namespace App\Jobs;
 
 use App\Services\Contracts\IUploadService;
-use BaconQrCode\Encoder\QrCode;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Illuminate\Support\Str;
 
 class StoreImageInCloud implements ShouldQueue
 {
@@ -27,21 +28,48 @@ class StoreImageInCloud implements ShouldQueue
 
     public function handle(IUploadService $uploadService)
     {
-        // Convertir le chemin temporaire en instance UploadedFile
-        $file = new UploadedFile(Storage::path($this->tempPath), basename($this->tempPath));
+        try {
+            // Vérifiez si le fichier temporaire existe
+            if (!Storage::exists($this->tempPath)) {
+                throw new \Exception('Le fichier temporaire n\'existe pas');
+            }
 
-        // Télécharger le fichier vers le cloud
-        $fileUrl = $uploadService->upload($file);
+            // Convertir le chemin temporaire en instance UploadedFile
+            $filePath = Storage::path($this->tempPath);
+            $file = new UploadedFile($filePath, basename($filePath));
 
-        // Mettre à jour l'utilisateur avec l'URL du fichier
-        $this->user->update(['photo' => $fileUrl]);
+            // Télécharger le fichier vers le cloud
+            $fileUrl = $uploadService->upload($file);
 
-        // Supprimer le fichier temporaire
-        Storage::delete($this->tempPath);
+            // Mettre à jour l'utilisateur avec l'URL du fichier
+            $this->user->update(['photo' => $fileUrl]);
 
-        // $qrCodePath = '../app/qrcodes/test_qrcode.png';
-        // QrCode::format('png')->size(300)->generate($text, $qrCodePath);
-        //    $qrCodePath = $qrCodeGenerator->generateQRCode($this->user->telephone);
+            // Supprimer le fichier temporaire
+            Storage::delete($this->tempPath);
+        } catch (\Exception $e) {
 
+                // Vérifiez si le fichier temporaire existe
+                if (!Storage::exists($this->tempPath)) {
+                    throw new \Exception('Le fichier temporaire n\'existe pas');
+                }
+
+                $filePath = Storage::path($this->tempPath);
+                $fileName = uniqid() . '.' . pathinfo($filePath, PATHINFO_EXTENSION);
+                $path = 'public/users/' . $fileName;
+
+                // Stocker l'image
+                Storage::put($path, file_get_contents($filePath));
+
+                // Obtenir l'URL publique
+                $publicUrl = Storage::url($path);
+
+                // Mettre à jour l'utilisateur avec l'URL du fichier
+                $this->user->update(['photo' => $publicUrl]);
+
+                // Supprimer le fichier temporaire
+                Storage::delete($this->tempPath);
+                return ;
+            }
+        }
     }
-}
+
