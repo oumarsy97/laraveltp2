@@ -11,6 +11,8 @@ use App\Http\Resources\DetteRessource;
 use App\Models\Article;
 use App\Models\Dette;
 use App\Models\Paiement;
+use App\Services\DetteService;
+use App\Services\Contracts\IDetteService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -18,256 +20,124 @@ use Illuminate\Support\Facades\DB;
 
 class DetteController extends Controller
 {
+    protected $detteService;
+
+    public function __construct(IDetteService  $detteService)
+    {
+        $this->middleware('auth:api');
+        $this->middleware('role:admin,boutiquier');
+        $this->detteService = $detteService;
+    }
+
+    public function all() {
+        $dettes =$this->detteService->all();
+
+        $data = new DetteRessource($dettes);
+        return $data;
+    }
 
 
 
-    /**
-     * @OA\Get(
-     *      path="/dettes",
-     *      summary="Liste des dettes",
-     *      tags={"Dette"},
-     *      @OA\Response(response="200", description="Liste des dettes"),
-     *   )
-     *  @OA\Parameter(
-     *      name="solde",
-     *      in="query",
-     *      required=false,
-     *      @OA\Schema(
-     *          type="string",
-     *          enum={"oui", "non"}
-     *      ),
-     *      description="Liste des dettes avec ou sans solde",
-     *
-     *   )
-     *  @OA\Response(
-     *      response=401,
-     *      description="Unauthorized",
-     *      @OA\JsonContent(
-     *          @OA\Property(property="message", type="string", example="Unauthenticated.")
-     *      )
-     *   )
-     */
+
    public function index(Request $request)
     {
         $solde = $request->query('solde');
-        if($solde == 'oui'){
-            $dette = Dette::where('montantRestant', '>', 0)->get();
-        }
-        elseif($solde == 'non'){
-            $dette = Dette::where('montantRestant', '=', 0)->get();
-        }else {
-            $dette = Dette::all();
-        }
+
+        // Utiliser le service pour obtenir les dettes avec le filtrage nécessaire
+        $dettes = $this->detteService->all($solde);
+        $data =  DetteRessource::collection($dettes);
 
 
-        return $this->sendResponse($dette, 'Liste des dettes', Response::HTTP_OK,ResponseStatus::SUCCESS);
+        return [
+            'data' => $data,
+            'status' => ResponseStatus::SUCCESS,
+            'message' => 'Liste des dettes',
+            'code' => Response::HTTP_OK
+        ];
     }
 
-/**
- * @OA\Post(
- *     path="/dettes",
- *     operationId="storeDette",
- *     tags={"Dette"},
- *     summary="Enregistre une nouvelle dette",
- *     description="Cette méthode permet d'enregistrer une nouvelle dette pour un client, avec les articles et le paiement associé.",
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(ref="#/components/schemas/StoreDetteRequest")
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Dette enregistrée avec succès",
- *         @OA\JsonContent(ref="#/components/schemas/Dette")
- *     ),
- *     @OA\Response(
- *         response=400,
- *         description="Requête invalide"
- *     ),
- *     @OA\Response(
- *         response=401,
- *         description="Non authentifié"
- *     ),
- *     @OA\Response(
- *         response=403,
- *         description="Accès refusé"
- *     ),
- *     @OA\Response(
- *         response=500,
- *         description="Erreur interne du serveur"
- *     )
- * )
- */
 
     public function store(StoreDetteRequest $request)
 {
     try{
-        DB::transaction(function () use ($request) {
-            foreach ($request->articles as $article) {
-                $articleModel = Article::find($article['articleId']);
-                if ($articleModel->qteStock < $article['qteVente']) {
-                    throw new \Exception('Quantité insuffisante pour l\'article ID: ' . $article['articleId']);
-                }
-            }
 
-            $dette = new Dette();
-            $dette->client_id = $request->clientId;
-            $dette->montant = $request->montant;
-            $dette->montantDu = $request->paiement['montant'];
-            $dette->montantRestant = $request->montant - $request->paiement['montant'];
-            $dette->save();
-
-            foreach ($request->articles as $article) {
-                $articleModel = Article::find($article['articleId']);
-                $articleModel->qteStock -= $article['qteVente'];
-                $articleModel->save();
-
-                $dette->articles()->attach($article['articleId'], [
-                    'qteVente' => $article['qteVente'],
-                    'prixVente' => $article['prixVente']
-                ]);
-            }
-
-            // Enregistrer le paiement
-            if($request->paiement['montant'] > 0) {
-            $paiement = new Paiement();
-            $paiement->dette_id = $dette->id;
-            $paiement->montant = $request->paiement['montant'];
-            $paiement->save();
-            }
-        });    //recuperer le dernier dette
-
-        $dette = Dette::latest()->first()->load('articles', 'client');
-
-
-    return $this->sendResponse($dette, 'Dette enregistrée avec succes', Response::HTTP_OK, ResponseStatus::SUCCESS);
+        $data = $this->detteService->store($request->validated());
+        return [
+            'data' => $data,
+            'status' => ResponseStatus::SUCCESS,
+            'message' => 'Dette enregistrée',
+            'code' => Response::HTTP_OK
+        ];
 }
 catch (\Exception $e) {
-    return response()->json(['message' => $e->getMessage()], 500);
+    return [
+        'data' => null,
+        'status' => ResponseStatus::ECHEC,
+        'message' => $e->getMessage(),
+        'code' => Response::HTTP_INTERNAL_SERVER_ERROR
+    ];
 }
 
 }
-
-/**
- * @OA\Get(
- *     path="/dettes/{id}",
- *     operationId="showDette",
- *     tags={"Dette"},
- *     summary="Afficher une dette spécifique",
- *     description="Cette méthode permet de récupérer une dette spécifique par son ID.",
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer"),
- *         description="ID de la dette"
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Dette trouvée avec succès",
- *         @OA\JsonContent(ref="#/components/schemas/Dette")
- *     ),
- *     @OA\Response(
- *         response=404,
- *         description="Dette introuvable",
- *         @OA\JsonContent(
- *             @OA\Property(
- *                 property="message",
- *                 type="string",
- *                 example="Dette introuvable"
- *             )
- *         )
- *     ),
- *     @OA\Response(
- *         response=500,
- *         description="Erreur interne du serveur",
- *         @OA\JsonContent(
- *             @OA\Property(
- *                 property="message",
- *                 type="string",
- *                 example="Une erreur s'est produite"
- *             )
- *         )
- *     )
- * )
- */
-
 public function show($id)
 {
     try{
-    $dette = Dette::find($id);
+    $dette = $this->detteService->show($id);
     if (!$dette) {
-        return $this->sendResponse(null, 'Dette introuvable', Response::HTTP_NOT_FOUND,ResponseStatus::ECHEC);
+        return [
+            'data' => null,
+            'status' => ResponseStatus::ECHEC,
+            'message' => 'Dette introuvable',
+            'code' => Response::HTTP_NOT_FOUND
+        ];
     }
-    return $this->sendResponse($dette->load('articles', 'client'), 'Dette trouve', Response::HTTP_OK,ResponseStatus::SUCCESS);
+
+    return [
+        'data' => $dette,
+        'status' => ResponseStatus::SUCCESS,
+        'message' => 'Dette selectionné',
+        'code' => Response::HTTP_OK
+    ];
 }
 catch (\Exception $e) {
-    return $this->sendResponse(null, $e->getMessage(), Response::HTTP_NOT_FOUND,ResponseStatus::ECHEC);
+    return [
+        'data' => null,
+        'status' => ResponseStatus::ECHEC,
+        'message' => $e->getMessage(),
+        'code' => Response::HTTP_INTERNAL_SERVER_ERROR
+
+    ];
 }
 
 }
-
-/**
- * @OA\Delete(
- *     path="/dettes/{id}",
- *     operationId="deleteDette",
- *     tags={"Dette"},
- *     summary="Supprimer une dette spécifique",
- *     description="Cette méthode permet de supprimer une dette spécifique par son ID.",
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer"),
- *         description="ID de la dette"
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Dette supprimée avec succès",
- *         @OA\JsonContent(
- *             @OA\Property(
- *                 property="message",
- *                 type="string",
- *                 example="Dette supprimée avec succes"
- *             )
- *         )
- *     ),
- *     @OA\Response(
- *         response=404,
- *         description="Dette introuvable",
- *         @OA\JsonContent(
- *             @OA\Property(
- *                 property="message",
- *                 type="string",
- *                 example="Dette introuvable"
- *             )
- *         )
- *     ),
- *     @OA\Response(
- *         response=500,
- *         description="Erreur interne du serveur",
- *         @OA\JsonContent(
- *             @OA\Property(
- *                 property="message",
- *                 type="string",
- *                 example="Une erreur s'est produite"
- *             )
- *         )
- *     )
- * )
- */
 
 public function destroy($id)
 {
     try{
-    $dette = Dette::find($id);
+    $dette = $this->detteService->show($id);
     if (!$dette) {
-        return $this->sendResponse(null, 'Dette introuvable', Response::HTTP_NOT_FOUND,ResponseStatus::ECHEC);
+        return [
+            'data' => null,
+            'status' => ResponseStatus::ECHEC,
+            'message' => 'Dette introuvable',
+            'code' => Response::HTTP_NOT_FOUND
+        ];
     }
     $dette->delete();
-    return $this->sendResponse(null, 'Dette supprimée avec succes', Response::HTTP_OK,ResponseStatus::SUCCESS);
+    return [
+        'data' => null,
+        'status' => ResponseStatus::SUCCESS,
+        'message' => 'Dette supprimee',
+        'code' => Response::HTTP_OK
+    ];
 }
 catch (\Exception $e) {
-    return $this->sendResponse(null, $e->getMessage(), Response::HTTP_NOT_FOUND,ResponseStatus::ECHEC);
+    return [
+        'data' => null,
+        'status' => ResponseStatus::ECHEC,
+        'message' => $e->getMessage(),
+        'code' => Response::HTTP_INTERNAL_SERVER_ERROR
+    ];
 }
 
 }
@@ -275,10 +145,15 @@ catch (\Exception $e) {
 public function listArticleDette(Request $request, $id)
 {
     try {
-        $data = Dette::with('articles', )->find($id);
+        $data = $this->detteService->show($id);
 
         if (!$data) {
-            return $this->sendResponse(null, 'Dette introuvable', Response::HTTP_NOT_FOUND, ResponseStatus::ECHEC);
+            return [
+                'data' => null,
+                'status' => ResponseStatus::ECHEC,
+                'message' => 'Dette introuvable',
+                'code' => Response::HTTP_NOT_FOUND
+            ];
         }
 
         if (!$request->user()->role == 'BOUTIQUIER' && !$request->user()->role == 'CLIENT') {
@@ -294,9 +169,20 @@ public function listArticleDette(Request $request, $id)
 
         $dette = new DetteRessource($data);
 
-        return $this->sendResponse($dette, 'Liste des articles de la dette', Response::HTTP_OK, ResponseStatus::SUCCESS);
+        return [
+            'data' => $dette,
+            'status' => ResponseStatus::SUCCESS,
+            'message' => 'Liste des articles',
+            'code' => Response::HTTP_OK
+        ];
+
     } catch (\Exception $e) {
-        return $this->sendResponse(null, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR, ResponseStatus::ECHEC);
+        return [
+            'data' => null,
+            'status' => ResponseStatus::ECHEC,
+            'message' => $e->getMessage(),
+            'code' => Response::HTTP_INTERNAL_SERVER_ERROR
+        ];
     }
 }
 
@@ -304,22 +190,42 @@ public function listArticleDette(Request $request, $id)
 
 public function listPaiementDette(Request $request,$id){
     try{
-    $dette = Dette::find($id);
+    $dette = $this->detteService->listPaiement($id);
     if (!$dette) {
-        return $this->sendResponse(null, 'Dette introuvable', Response::HTTP_NOT_FOUND,ResponseStatus::ECHEC);
+        return [
+            'data' => null,
+            'status' => ResponseStatus::ECHEC,
+            'message' => 'Dette introuvable',
+            'code' => Response::HTTP_NOT_FOUND
+        ];
     }
     if (!$request->user()->role == 'BOUTIQUIER' && !$request->user()->role == 'CLIENT') {
-        return $this->sendResponse(null, 'Vous n\'avez pas les autorisations requises', Response::HTTP_FORBIDDEN, ResponseStatus::ECHEC);
-    }
+        return [
+            'data' => null,
+            'status' => ResponseStatus::ECHEC,
+            'message' => 'Vous n\'avez pas les autorisations requises',
+            'code' => Response::HTTP_FORBIDDEN
+        ];
+        }
 
 
     if ($request->user()->role->libelle =='CLIENT') {
         $clientId = $request->user()->client->id ?? null; // Récupère l'ID du client lié à l'utilisateur
         if (!$clientId || $dette->client_id !== $clientId) {
-            return $this->sendResponse(null, 'Vous n\'avez pas les autorisations requises', Response::HTTP_FORBIDDEN, ResponseStatus::ECHEC);
+            return [
+                'data' => null,
+                'status' => ResponseStatus::ECHEC,
+                'message' => 'Vous n\'avez pas les autorisations requises',
+                'code' => Response::HTTP_FORBIDDEN
+            ];
         }
     }
-    return $this->sendResponse($dette->load('paiements'), 'Liste des paiements', Response::HTTP_OK,ResponseStatus::SUCCESS);
+    return [
+        'data' => $dette,
+        'status' => ResponseStatus::SUCCESS,
+        'message' => 'Liste des paiements',
+        'code' => Response::HTTP_OK
+    ];
 }
 catch (\Exception $e) {
     return $this->sendResponse(null, $e->getMessage(), Response::HTTP_NOT_FOUND,ResponseStatus::ECHEC);

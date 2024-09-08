@@ -192,6 +192,9 @@ return [
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
         'Upload' => App\Facades\UploadFacade::class,
+        'UserRepository' => App\Facades\UserRepositoryFacade::class,
+        'ClientRepository' => App\Facades\ClientRepositoryFacade::class,
+
     ])->toArray(),
 
 ];

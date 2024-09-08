@@ -12,13 +12,17 @@ class DetteRessource extends JsonResource
      *
      * @return array<string, mixed>
      */
-    public function toArray(Request $request): array
+    public function toArray( $request): array
     {
+        // $this->load('articles');
+
        return [
-           'id' => $this->id,
-           'montant' => $this->montant,
-           'montantPaye' => $this->montantDu,
-           'montantRestant' => $this->montantRestant,
+
+            'id' => $this->id,
+            'montant' => $this->montant,
+            'montantDu' => $this->montant_du,
+            'montantRestant' => $this->montant_restant,
+            'client_id' => $this->client_id,
             'articles' => new ArticleCollection($this->articles),
        ];
     }

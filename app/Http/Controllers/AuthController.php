@@ -5,6 +5,7 @@ use App\Enums\EtatEnum;
 use App\Enums\ResponseStatus;
 use App\Enums\RoleEnum;
 use App\Events\ImageUploaded;
+use App\Facades\ClientRepositoryFacade;
 use App\Facades\UploadFacade;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
@@ -33,14 +34,12 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class AuthController extends Controller
 {
-    use ApiResponser;
     protected $tokenService;
     protected $loyaltyCardService;
 
-    public function __construct(TokenServiceInterface $tokenService, LoyaltyCardServiceInterface $loyaltyCardService)
+    public function __construct(TokenServiceInterface $tokenService)
     {
         $this->tokenService = $tokenService;
-        $this->loyaltyCardService = $loyaltyCardService;
     }
 
     public function store(StoreUserRequest $request)
@@ -48,8 +47,11 @@ class AuthController extends Controller
     $validated = $request->validated();
     $clientId = $request->input('client_id');
 
-    // Trouver le client
-    $client = Client::with('user')->findOrFail($clientId);
+
+    $client = Client::find($clientId);
+    if (!$client) {
+        return $this->sendResponse(null, 'Client introuvable', Response::HTTP_NOT_FOUND, ResponseStatus::ECHEC);
+    }
 
     if ($client->user_id !== null) {
         return $this->sendResponse($client, 'Ce client a déjà un compte', Response::HTTP_CONFLICT, ResponseStatus::ECHEC);
@@ -70,13 +72,14 @@ class AuthController extends Controller
     $client->user()->associate($user);
     $client->save();
     //recuperer l'image
-    if ($request->hasFile('photo')) {
-        $file = $request->file('photo');
-        $tempPath = $file->store('temp');
-        // StoreImageInCloud::dispatch($user, $tempPath);
-    }
+    // if ($request->hasFile('photo')) {
+         $file = $request->file('photo');
+    //     $tempPath = $file->store('temp');
+    // //    StoreImageInCloud::dispatch($user, $tempPath);
 
-    SendEmailJob::dispatch($user, $tempPath);
+    // }
+
+     //SendEmailJob::dispatch($user, $file);
     //   $client = Client::with('user')->find($clientId);
 
 
@@ -105,6 +108,7 @@ class AuthController extends Controller
                 if ($user->etat == EtatEnum::INACTIF->value) {
                     return $this->sendResponse(null, 'Compte inactif', Response::HTTP_FORBIDDEN, ResponseStatus::ECHEC);
                 }
+
 
                 $tokenString = $this->tokenService->createToken($user);
                 $refreshToken = $this->tokenService->createRefreshToken($user);

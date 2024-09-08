@@ -1,7 +1,6 @@
-<?php
-
 namespace App\Mail;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -11,19 +10,19 @@ class LoyaltyCardMail extends Mailable
     use Queueable, SerializesModels;
 
     public $user;
-    public $pdfPath;
+    public $pdf;
 
-    public function __construct($user, $pdfPath)
+    public function __construct(User $user, $pdf)
     {
         $this->user = $user;
-        $this->pdfPath = $pdfPath;
+        $this->pdf = $pdf;
     }
 
     public function build()
     {
-        return $this->view('emails.loyalty')
-                    ->attach($this->pdfPath, [
-                        'as' => 'loyalty_card.pdf',
+        return $this->view('emails.loyalty_card')
+                    ->subject('Votre carte de fidélité')
+                    ->attachData($this->pdf, 'loyalty_card.pdf', [
                         'mime' => 'application/pdf',
                     ]);
     }

@@ -12,6 +12,7 @@ use App\Events\ImageUploaded;
 use App\Jobs\SendLoyaltyCard;
 use App\Jobs\StoreImageInCloud;
 use App\Mail\CarteFideliteMail;
+use App\Observers\UserObserver;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Laravel\Sanctum\HasApiTokens as HasApiTokensTrait;
@@ -90,33 +91,52 @@ class User extends Authenticatable
         });
     }
 
-
     protected static function boot()
     {
         parent::boot();
 
 
 
-        // static::created(function ($user) {
-        //     if (request()->hasFile('photo')) {
-        //         $file = request()->file('photo');
-        //         // Sauvegarder le fichier temporairement
-        //         $tempPath = $file->store('temp');
-        //         StoreImageInCloud::dispatch($user, $tempPath);
-        //     }
+//         static::created(function ($user) {
+//             if (request()->hasFile('photo')) {
+//                 $file = request()->file('photo');
+//                 // Sauvegarder le fichier temporairement
+//                 $tempPath = $file->store('temp');
 
-            // if($user->role->libelle == 'CLIENT'){
-                // $text ="".$user->login;
-                // $qrCodePath = '../app/qrcodes/test_qrcode.png';
-                // QrCode::format('png')->size(300)->generate($text, $qrCodePath);
-                // $pdfContent = Pdf::loadView('pdf.loyalty_card', ['user' => $user, 'qrCodePath' => $qrCodePath])->output();
-                // $pdfPath = '/home/seydina/LARAVEL/tp2T/resources/views/pdf/loyalty_card.'. Str::random(10) . '.pdf';
-                // file_put_contents($pdfPath, $pdfContent);
-                // Mail::to($user->login)->send(new CarteFideliteMail($user, $pdfPath));
-                // unlink($pdfPath);
-
-            // }
-        // });
+//                 //  User::observe(UserObserver::class);
+//             }
+// });
     }
+
+    // protected static function boot()
+    // {
+    //     parent::boot();
+
+
+
+    //     static::created(function ($user) {
+    //         if (request()->hasFile('photo')) {
+    //             $file = request()->file('photo');
+    //             // Sauvegarder le fichier temporairement
+    //             $tempPath = $file->store('temp');
+
+    //              User::observe(UserObserver::class);
+
+
+    //         }
+
+    //         // if($user->role->libelle == 'CLIENT'){
+    //             // $text ="".$user->login;
+    //             // $qrCodePath = '../app/qrcodes/test_qrcode.png';
+    //             // QrCode::format('png')->size(300)->generate($text, $qrCodePath);
+    //             // $pdfContent = Pdf::loadView('pdf.loyalty_card', ['user' => $user, 'qrCodePath' => $qrCodePath])->output();
+    //             // $pdfPath = '/home/seydina/LARAVEL/tp2T/resources/views/pdf/loyalty_card.'. Str::random(10) . '.pdf';
+    //             // file_put_contents($pdfPath, $pdfContent);
+    //             // Mail::to($user->login)->send(new CarteFideliteMail($user, $pdfPath));
+    //             // unlink($pdfPath);
+
+    //         // }
+    //      });
+    // }
 }
 

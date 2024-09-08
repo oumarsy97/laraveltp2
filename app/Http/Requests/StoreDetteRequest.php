@@ -30,11 +30,14 @@ class StoreDetteRequest extends FormRequest
         return [
             //
             'montant' => 'sometimes|numeric|min:0',
+            'paiement' => 'array',
             'clientId' => 'required|exists:clients,id',
             'articles' => 'required|array',
-            'articles.*.articleId' => 'required|exists:articles,id',
+            'articles.*.articleId' => 'required|',
             'articles.*.qteVente' => 'required|integer|min:1',
             'articles.*.prixVente' => 'required|numeric|min:0',
+
+
         ];
     }
 

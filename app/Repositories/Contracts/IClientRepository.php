@@ -11,4 +11,8 @@ interface IClientRepository
     public function findByLibelle(string $libelle);
     public function findByEtat(string $etat);
     public function findByTelephone(string $telephone);
+    public function findWithUser(int $id);
+    public function query();
+    public function filterByUser($query, $user);
+    public function filterByEtat($query, $etat);
 }

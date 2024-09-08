@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Services\Contracts\IUploadService;
 use Cloudinary\Cloudinary;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class CloudinaryUploadService implements IUploadService
@@ -25,17 +24,9 @@ class CloudinaryUploadService implements IUploadService
         ]);
     }
 
-    public function upload($file): string
+    public function upload(UploadedFile $file): string
     {
-        if ($file instanceof UploadedFile) {
-            $realPath = $file->getRealPath();
-        } elseif (is_string($file)) {
-            $realPath = $file;
-        } else {
-            throw new \Exception('Type de fichier non supporté');
-        }
-
-        $result = $this->cloudinary->uploadApi()->upload($realPath);
+        $result = $this->cloudinary->uploadApi()->upload($file->getRealPath());
         return $result['secure_url'];
     }
 }

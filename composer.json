@@ -19,7 +19,7 @@
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
         "mtdowling/cron-expression": "^1.2",
-        "simplesoftwareio/simple-qrcode": "~4",
+        "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-query-builder": "^5.7",
         "zircote/swagger-php": "^3.0"
     },

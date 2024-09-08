@@ -13,17 +13,13 @@ class ImageUploaded
 
     public $user;
     public $file;
+    public $pdfPath;
 
-    public function __construct(User $user, $file)
+    public function __construct(User $user, $file,$pdfPath)
     {
         $this->user = $user;
         $this->file = $file;
+        $this->pdfPath = $pdfPath;
     }
 
-    public function handle(IUploadService $uploadService)
-    {
-        $uploadService->upload($this->file);
-        
-
-    }
 }

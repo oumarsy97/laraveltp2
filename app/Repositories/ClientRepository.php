@@ -1,6 +1,7 @@
 <?php
 namespace App\Repositories;
 
+use App\Enums\EtatEnum;
 use App\Http\Requests\TelephoneRequest;
 use App\Models\Client;
 use App\Repositories\Contracts\IClientRepository ;
@@ -15,6 +16,11 @@ class ClientRepository implements IClientRepository
     public function find(int $id)
     {
         return Client::findOrFail($id);
+    }
+
+    public function findWithUser(int $id)
+    {
+        return Client::with('user')->findOrFail($id);
     }
 
     public function create(array $data)
@@ -49,5 +55,36 @@ class ClientRepository implements IClientRepository
     public function findByTelephone(String $telephone)
     {
        return   Client::first();
+    }
+
+    public function query()
+    {
+        return Client::query();
+    }
+
+    public function filterByUser($query, $user)
+    {
+        if ($user == 1) {
+            $query->whereNotNull('user_id')->with('user');
+        } elseif ($user == 0) {
+            $query->whereNull('user_id');
+        }
+
+        return $query;
+    }
+
+    public function filterByEtat($query, $etat)
+    {
+        if ($etat === EtatEnum::ACTIF->value) {
+            $query->whereHas('user', function ($query) {
+                $query->where('etat', '=', EtatEnum::ACTIF->value);
+            })->with('user');
+        } elseif ($etat === EtatEnum::INACTIF->value) {
+            $query->whereHas('user', function ($query) {
+                $query->where('etat', '=', EtatEnum::INACTIF->value);
+            })->with('user');
+        }
+
+        return $query;
     }
 }

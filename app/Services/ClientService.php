@@ -3,11 +3,8 @@ namespace App\Services;
 
 use App\Enums\EtatEnum;
 use App\Enums\ResponseStatus;
-use App\Exceptions\RepositoryException;
 use App\Exceptions\ServiceException;
-use App\Http\Requests\TelephoneRequest;
-use App\Models\Client;
-use App\Models\User;
+use App\Facades\UserRepositoryFacade;
 use App\Services\Contracts\IClientService;
 use App\Repositories\Contracts\IClientRepository;
 use Exception;
@@ -17,7 +14,6 @@ use Illuminate\Support\Facades\DB;
 class ClientService implements IClientService
 {
     protected $clientRepository;
-
     public function __construct(IClientRepository $clientRepository)
     {
         $this->clientRepository = $clientRepository;
@@ -28,33 +24,32 @@ class ClientService implements IClientService
         return $this->clientRepository->getAll();
     }
 
-    public function getClientById(int $id)
+    public function find( int $id)
     {
         return $this->clientRepository->find($id);
+    }
+
+    public function getClientById(int $id)
+    {
+        return $this->clientRepository->findWithUser($id);
     }
 
     public function createClient(array $data)
     {
         DB::beginTransaction(); // Démarrer une transaction
- try {
-    $client = Client::create($data);
+     try {
+    $client = $this->clientRepository->create($data);
 
     if (isset($data['user']) && $data['user']!=null) {
         $userData = $data['user'];
         $userData['password'] = bcrypt($userData['password']);
-        $user = User::create($userData);
+        $user = UserRepositoryFacade::create($userData);
         $user->client()->save($client);
     }
 
     DB::commit(); // Terminer la transaction
-    $client = Client::with('user')->find($client->id);
-    return [
-
-        'status' => ResponseStatus::SUCCESS,
-        'message' => 'Client enregistré avec succes',
-        'data' => $client,
-        'code' => Response::HTTP_OK
-    ];
+    $client = $this->clientRepository->findWithUser($client->id);
+    return $client;
 } catch (Exception $e) {
     DB::rollBack();
     return new ServiceException($e->getMessage(), Response::HTTP_BAD_REQUEST, ResponseStatus::ECHEC);
@@ -62,22 +57,27 @@ class ClientService implements IClientService
 
 }
 
-    public function updateClient(int $id, array $data)
+    public function update(int $id, array $data)
     {
         return $this->clientRepository->update($id, $data);
     }
 
-    public function deleteClient(int $id)
+    public function delete(int $id)
     {
         return $this->clientRepository->delete($id);
     }
 
-    public function filteredClients(?string $compte, ?string $active) {
-        $query = Client::query();
-        $user = null;
-        $etat = null;
+    public function findClientByTelephone(String $telephone)
+    {
+        return $this->clientRepository->findByTelephone($telephone);
+    }
+
+    public function filteredClients($active = null, $compte = null)
+    {
+        $query = $this->clientRepository->query();
 
         // Déterminer la valeur du filtre pour l'état actif/inactif des utilisateurs
+        $etat = null;
         switch ($active) {
             case 'oui':
                 $etat = EtatEnum::ACTIF->value;
@@ -88,6 +88,7 @@ class ClientService implements IClientService
         }
 
         // Déterminer la valeur du filtre pour le compte utilisateur
+        $user = null;
         switch ($compte) {
             case 'oui':
                 $user = 1;
@@ -97,22 +98,13 @@ class ClientService implements IClientService
                 break;
         }
 
-        if($user == 1){
-            $query->whereNotNull('user_id')->with('user');
+        // Appliquer les filtres via le Repository
+        if ($user !== null) {
+            $query = $this->clientRepository->filterByUser($query, $user);
         }
-        if($user != null && $user == 0){
-            $query->whereNull('user_id');
-        }
-        if ($etat === EtatEnum::ACTIF->value) {
-            $query->whereHas('user', function ($query) {
-                $query->where('etat', '=', EtatEnum::ACTIF->value);
-            });
-            $query->with('user');
-        } elseif ($etat === EtatEnum::INACTIF->value) {
-            $query->whereHas('user', function ($query) {
-                $query->where('etat', '=', EtatEnum::INACTIF->value);
-            });
-            $query->with('user');
+
+        if ($etat !== null) {
+            $query = $this->clientRepository->filterByEtat($query, $etat);
         }
 
         return $query->get();
@@ -121,8 +113,7 @@ class ClientService implements IClientService
     public function findByTelephone( String $telephone)
     {
         try{
-
-            return  Client::first();
+            return $this->clientRepository->findByTelephone($telephone);
         }
         catch (\Exception $e) {
             throw new ServiceException("Erreur dans le service: " . $e->getMessage(), $e->getCode());

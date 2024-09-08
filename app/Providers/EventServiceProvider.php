@@ -3,7 +3,11 @@
 namespace App\Providers;
 
 use App\Events\ImageUploaded;
+use App\Events\LoyaltyCardRequested;
+use App\Jobs\StoreImageInCloud as JobsStoreImageInCloud;
+use App\Listeners\GenerateLoyaltyCard;
 use App\Listeners\HandleImageUploadListener;
+use App\Listeners\SendMail;
 use App\Listeners\StoreImageInCloud;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -24,6 +28,9 @@ class EventServiceProvider extends ServiceProvider
         ImageUploaded::class => [
             HandleImageUploadListener::class,
         ],
+        LoyaltyCardRequested::class => [
+            GenerateLoyaltyCard::class,
+        ],
     ];
 
     /**
@@ -32,6 +39,17 @@ class EventServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
+
+        //  Event::listen(ImageUploaded::class, JobsStoreImageInCloud::class);
+        Event::listen(
+            ImageUploaded::class,
+            [HandleImageUploadListener::class, 'handle']
+        );
+        // Event::listen(
+        //     ImageUploaded::class,
+        //     [SendMail::class, 'handle']
+        // );
+
     }
 
     /**
@@ -41,4 +59,6 @@ class EventServiceProvider extends ServiceProvider
     {
         return false;
     }
+
+
 }

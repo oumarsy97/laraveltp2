@@ -1,27 +1,28 @@
 <?php
+
 namespace App\Observers;
 
-use App\Models\User;
 use App\Jobs\StoreImageInCloud;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 class UserObserver
 {
-    // Cette méthode reçoit un objet User et non une Closure
     public function created(User $user)
     {
-        if (request()->hasFile('photo')) {
-            $file = request()->file('photo');
+        // Vérifier si le fichier est présent dans la requête
+        $file = request()->file('photo');
+        if ($file instanceof UploadedFile) {
+            // Créer un chemin temporaire pour le fichier
             $tempPath = $file->store('temp');
-            StoreImageInCloud::dispatch($user, $tempPath);
-        }
-    }
 
-    public function updated(User $user)
-    {
-        if (request()->hasFile('photo')) {
-            $file = request()->file('photo');
-            $tempPath = $file->store('temp');
-            StoreImageInCloud::dispatch($user, $tempPath);
+            // Sauvegarder temporairement le fichier
+            $filePath = Storage::path($tempPath);
+
+            // Dispatcher le Job avec le chemin temporaire du fichier
+             StoreImageInCloud::dispatch($user, $filePath);
+
         }
     }
 }

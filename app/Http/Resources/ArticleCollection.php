@@ -14,9 +14,10 @@ class ArticleCollection extends ResourceCollection
      */
     public function toArray($request)
     {
-        
+
         return $this->collection->map(function ($article) {
             return [
+                'id' => $article->id,
                 'qteVente' => $article->pivot->qteVente,
                 'prixVente' => $article->pivot->prixVente,
             ];

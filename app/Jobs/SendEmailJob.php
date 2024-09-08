@@ -37,8 +37,9 @@ class SendEmailJob implements ShouldQueue
      */
     public function handle()
     {
-        // Envoie de l'email avec la pièce jointe (PDF)
-        dd($this->user, $this->pdfPath);
-        Mail::to($this->user->login)->send(new LoyaltyCardMail($this->user, $this->pdfPath));
+        // Générer le PDF
+
+        // Envoyer l'email
+        // Mail::to($this->user->login)->send(new LoyaltyCardMail($this->user, $this->pdfPath));
     }
 }
